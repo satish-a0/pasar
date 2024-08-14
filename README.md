@@ -92,3 +92,4 @@ If you have an existing R Setup and familiar with OHDSI Packages then setup the 
 #### Remove Docker Container & Volume
 - Remove container, Run `docker rm -f pasar-postgres`
 - Remove volume (<b>CAUTION - ALL DATA WILL BE LOST!!</b>), Run `docker volume rm pg-pasar-data` 
+
