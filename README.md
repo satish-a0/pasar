@@ -52,6 +52,7 @@ If you have an existing R Setup and familiar with OHDSI Packages then setup the 
 
 ### Using Python
 
+
 - Ensure 
 	1. Environment variables are setup accordingly in `.env`
 	2. Current working directory is under `etl` folder
