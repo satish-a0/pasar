@@ -39,3 +39,4 @@ if __name__ == '__main__':
     with postgresGcp.get_engine().connect() as connection:
         res = connection.execute(text("SELECT * from preop.char LIMIT 5;")).fetchall()
         print(res)
+    postgresGcp.close_tunnel()
