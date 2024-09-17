@@ -83,6 +83,20 @@ If you have an existing R Setup and familiar with OHDSI Packages then setup the 
 	- Example `python . etl cdm_source`
 	- Multiple tables for cdm_source and concept `python . etl cdm_source,concept`. <b>NO SPACES BETWEEN COMMA SEPARTED OMOP Tables</b>
 
+### **PostgresGCP** Class
+
+**PostgresGCP** is a class that does an ssh tunnel to the GCP VM, and binds the GCP Postgres port to your local system. This is to provide a programatic way to connect to source postgres database hosted at google cloud postgres
+
+In order to use this class, please fill in the following env variables in your `.env` file.
+
+- GCP_VM_IP
+- GCP_VM_USERNAME
+- GCP_VM_PKEY_PATH
+- GCP_POSTGRES_IP
+- GCP_POSTGRES_PASSWORD
+
+Run `python ./pypasar/db/utils/PostgresGCP.py` to ensure that everything is setup correctly and a query to GCP postgres is successful.
+
 ### Cleanup
 
 #### Remove Python environment
