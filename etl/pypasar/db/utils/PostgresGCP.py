@@ -23,7 +23,7 @@ class PostgresGCP:
         server.start()
         self.server = server 
 
-        # Establish connection to google cloud vm via ssh tunnel
+        # Establish connection to google cloud postgres instance via binded port from ssh tunnel
         self.connectable = create_engine(f"postgresql+psycopg2://{os.getenv("GCP_POSTGRES_USER")}:{os.getenv("GCP_POSTGRES_PASSWORD")}@localhost:{local_tunnel_port}/{self.db}")
 
     def close_tunnel(self):
