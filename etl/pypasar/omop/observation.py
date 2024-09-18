@@ -58,7 +58,7 @@ class observation:
         mapped_df = pd.concat([mapped_df, res], axis=1)
 
         # log random sample from final mapped_df for sanity check
-        logger.info(mapped_df.sample(15))
+        logger.info(mapped_df.sample(15).sort_index())
 
         # Ingest into OMOP Table
         # TODO: Add insertion of mapped_df into OMOP table
