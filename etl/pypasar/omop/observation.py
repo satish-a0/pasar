@@ -85,16 +85,20 @@ class observation:
         mapped_df = pd.concat([mapped_df, res], axis=1)
 
         # # # qualifier_concept_id
+        # NO MAPPING
 
         # # # unit_concept_id
+        # NO MAPPING
 
         # # # provider_id
+        # NO MAPPING
 
         # # # visit_occurrence_id
         res = ObservationMappings.map_visit_occurrence_id(df)
         mapped_df = pd.concat([mapped_df, res], axis=1)
 
         # # # visit_detail_id
+        # NO MAPPING
 
         # # # observation_source_value
         res = ObservationMappings.concatenate_multiple_columns_into_one(
@@ -102,10 +106,13 @@ class observation:
         mapped_df = pd.concat([mapped_df, res], axis=1)
 
         # # # observation_source_concept_id
+        # NO MAPPING
 
         # # # unit_source_value
+        # NO MAPPING
 
         # # # qualifier_source_value
+        # NO MAPPING
 
         # # # value_source_value
         res = ObservationMappings.concatenate_multiple_columns_into_one(
@@ -113,8 +120,10 @@ class observation:
         mapped_df = pd.concat([mapped_df, res], axis=1)
 
         # # # observation_event_id
+        # NO MAPPING
 
         # # # obs_event_field_concept_id
+        # NO MAPPING
 
         # # # log random sample from final mapped_df for sanity check
         logger.info("Final results")
