@@ -28,6 +28,15 @@ class death:
                 connection.execute(
                     text(f'SET search_path TO {os.getenv("POSTGRES_OMOP_SCHEMA")}'))
 
+                # Verify that each person has a unique death_date
+                result = connection.execute(
+                    text(f'''SELECT (
+                        case when count(distinct(anon_case_no, death_date))=count(distinct(anon_case_no)) then 'Unique' else 'Duplicate' end)
+                        FROM {os.getenv("POSTGRES_SOURCE_SCHEMA")}.info WHERE death_date IS NOT NULL'''
+                    )).mappings().all()[0]
+                if result['case'] != 'Unique':
+                    raise ValueError(f'There is duplicate in death_date.')
+
                 # Drop stg__death view if exists
                 connection.execute(text("DROP VIEW IF EXISTS stg__death"))
 
@@ -38,7 +47,6 @@ class death:
         # Set SCHEMA
         omop_schema = os.getenv("POSTGRES_OMOP_SCHEMA")
         source_schema = os.getenv("POSTGRES_SOURCE_SCHEMA")
-        omop_sqldev_schema = "omop_sqldev_schema"	### temporarily put this variable as the person table is empty in omop_etldev_schema
 
         with self.engine.connect() as connection:
             with connection.begin():
@@ -51,7 +59,7 @@ class death:
                             source.death_date AS death_date,
                             32879 AS death_type_concept_id
                         FROM {source_schema}.info AS source
-                        JOIN {omop_sqldev_schema}.person AS cdm
+                        JOIN {omop_schema}.person AS cdm
                             ON source.anon_case_no=cdm.person_source_value
                         WHERE
                             source.death_date IS NOT NULL'''
