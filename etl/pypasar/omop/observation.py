@@ -1,12 +1,13 @@
 import os
+import time
 from sqlalchemy import text
 import pandas as pd
 from dotenv import load_dotenv
 
 from ..db.utils.postgres import postgres
 
-from .observation_utils.mappings import map_observation_id, map_observation_date, map_value_as_string
-from .observation_utils.config import SOURCE_TABLE_COL_NAME, SOURCE_TABLES
+from .observation_utils.mappings import ObservationMappings
+from .observation_utils.config import SOURCE_TABLE_COL_NAME, SOURCE_TABLES, ObservationMappingConfig
 
 import logging
 logger = logging.getLogger(__name__)
@@ -40,6 +41,7 @@ class observation:
                 connection.execute(text("Truncate table observation"))
 
     def process(self):
+        start = time.process_time()
         # In batches
         # Read from source
         df = self.get_data()
@@ -48,22 +50,81 @@ class observation:
         # Initialize empty dataframe to continously append mapped columns
         mapped_df = pd.DataFrame()
 
-        res = map_observation_id(df)
+        # # # observation_id
+        res = ObservationMappings.map_observation_id(df)
         mapped_df = pd.concat([mapped_df, res], axis=1)
 
-        res = map_observation_date(df)
+        # # # person_id
+
+        # # # observation_concept_id
+
+        # # # observation_date
+        res = ObservationMappings.map_observation_date(df)
         mapped_df = pd.concat([mapped_df, res], axis=1)
 
-        res = map_value_as_string(df)
+        # # # observation_datetime
+        # NO MAPPING
+
+        # # # observation_type_concept_id
+        res = ObservationMappings.map_observation_type_concept_id(df)
         mapped_df = pd.concat([mapped_df, res], axis=1)
 
-        # log random sample from final mapped_df for sanity check
+        # # # value_as_number
+        res = ObservationMappings.map_value_as_number(df)
+        mapped_df = pd.concat([mapped_df, res], axis=1)
+
+        # # # value_as_string
+        res = ObservationMappings.concatenate_multiple_columns_into_one(
+            df, ObservationMappingConfig.value_as_string_mapping)
+        mapped_df = pd.concat([mapped_df, res], axis=1)
+
+        # # # value_as_concept_id
+        allergy_concepts_df = self.get_allergy_concepts()
+        res = ObservationMappings.map_value_as_concept_id(
+            df, allergy_concepts_df)
+        mapped_df = pd.concat([mapped_df, res], axis=1)
+
+        # # # qualifier_concept_id
+
+        # # # unit_concept_id
+
+        # # # provider_id
+
+        # # # visit_occurrence_id
+        res = ObservationMappings.map_visit_occurrence_id(df)
+        mapped_df = pd.concat([mapped_df, res], axis=1)
+
+        # # # visit_detail_id
+
+        # # # observation_source_value
+        res = ObservationMappings.concatenate_multiple_columns_into_one(
+            df, ObservationMappingConfig.observation_source_value_mapping)
+        mapped_df = pd.concat([mapped_df, res], axis=1)
+
+        # # # observation_source_concept_id
+
+        # # # unit_source_value
+
+        # # # qualifier_source_value
+
+        # # # value_source_value
+        res = ObservationMappings.concatenate_multiple_columns_into_one(
+            df, ObservationMappingConfig.value_source_value_mapping)
+        mapped_df = pd.concat([mapped_df, res], axis=1)
+
+        # # # observation_event_id
+
+        # # # obs_event_field_concept_id
+
+        # # # log random sample from final mapped_df for sanity check
+        logger.info("Final results")
         logger.info(mapped_df.sample(15).sort_index())
 
         # Ingest into OMOP Table
         # TODO: Add insertion of mapped_df into OMOP table
 
-        pass
+        logger.info(
+            f"Total Time taken for observation processing: {time.process_time() - start:.3f}s")
 
     def finalize(self):
         # Verify if needed
@@ -74,11 +135,20 @@ class observation:
             df = pd.DataFrame()
             for source in SOURCE_TABLES:
                 temp = pd.read_sql(
-                    f"SELECT * from {source} LIMIT 10;",
+                    f"SELECT * from {source} LIMIT 10000;",
                     con=connection
                 )
                 # Add a column to indicate which source row is from
                 temp[SOURCE_TABLE_COL_NAME] = source
                 df = pd.concat([df, temp], ignore_index=True)
-
         return df
+
+    def get_allergy_concepts(self) -> pd.DataFrame:
+        with self.engine.connect() as connection:
+            df = pd.read_sql(
+                text(
+                    "select concept_id, concept_name from omop_pydev_schema.concept where concept_name like 'Allergy to %';"
+                ),
+                con=connection
+            )
+            return df

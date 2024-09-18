@@ -13,8 +13,9 @@ def mapping_wrapper(method):
         # Run original function
         return_value = method(*args, **kwargs)
 
-        logger.debug(return_value.sample(5).sort_index())
+        # For debugging print out a sample of results
+        logger.debug(return_value.dropna().sort_index())
         logger.info(
-            f"Time taken for {method.__name__}: {time.process_time() - start}")
+            f"Time taken for {method.__name__}: {time.process_time() - start:.3f}s")
         return return_value
     return wrapped
