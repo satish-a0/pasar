@@ -10,9 +10,9 @@ class PostgresGCP:
     def __init__(self):
         self.db = os.getenv("GCP_POSTGRES_DB")
 
-        # Establish connection to google cloud postgres instance via binded port from ssh tunnel
-        self.connectable = create_engine(f"postgresql+psycopg2://{os.getenv("GCP_POSTGRES_USER")}:{
-                                         os.getenv("GCP_POSTGRES_PASSWORD")}@{os.getenv("GCP_POSTGRES_IP")}:5432/{self.db}")
+        # Establish connection to GCP postgres instance
+        self.connectable = create_engine(
+            f"""postgresql+psycopg2://{os.getenv("GCP_POSTGRES_USER")}:{os.getenv("GCP_POSTGRES_PASSWORD")}@{os.getenv("GCP_POSTGRES_IP")}:5432/{self.db}""")
 
     def close(self):
         self.connectable.dispose()
@@ -21,10 +21,11 @@ class PostgresGCP:
         return self.connectable
 
 
-# Example code just to test and check if PostgresGCP is able to connect to postgres instance hosted at google cloud via ssh tunnel to google cloud vm and query results
+# Example code just to test and check if PostgresGCP is able to connect to postgres instance hosted at GCP and query some results
 if __name__ == '__main__':
-    PostgresGCP = PostgresGCP()
-    with PostgresGCP.get_engine().connect() as connection:
+    postgresGcp = PostgresGCP()
+    with postgresGcp.get_engine().connect() as connection:
         res = connection.execute(
             text("SELECT * from preop.char LIMIT 5;")).fetchall()
         print(res)
+    postgresGcp.close()
