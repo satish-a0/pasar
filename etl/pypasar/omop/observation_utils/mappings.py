@@ -58,6 +58,11 @@ class ObservationMappings():
                 lambda x: ','.join(x.astype(str)),
                 axis=1
             )
+
+        # TODO: TO REMOVE: TEMPOARILY ADD SO THAT INGESTION CAN WORK DUE TO VARCHAR(50) CONSTRAINT
+        df[observation_mapping["omop"]
+           ] = df[observation_mapping["omop"]].str.slice(0, 50)
+
         return df[[observation_mapping["omop"]]]
 
     @mapping_wrapper
