@@ -49,7 +49,7 @@ class observation:
         # Process PASAR to OMOP
         logger.info("Processing PASAR to OMOP...")
         start = time.process_time()
-        # In batches
+
         # Read from source
         df = self.get_data()
 
@@ -58,9 +58,9 @@ class observation:
         self.mapped_df = pd.concat([self.mapped_df, res], axis=1)
 
         # # # person_id
-        # TODO: Add logic
-        # Temp add dummy values to test insertion into destination schema
-        self.mapped_df["person_id"] = range(1, len(self.mapped_df) + 1)
+        omop_person_df = self.get_omop_person_table()
+        res = ObservationMappings.map_person_id(df, omop_person_df)
+        self.mapped_df = pd.concat([self.mapped_df, res], axis=1)
 
         # # # observation_concept_id
         # TODO: Add logic
@@ -152,8 +152,7 @@ class observation:
         logger.info("Ingestion Done")
 
     def finalize(self):
-        # Verify if needed
-        pass
+        self.engine.dispose()
 
     def get_data(self) -> pd.DataFrame:
         with self.engine.connect() as connection:
@@ -168,10 +167,18 @@ class observation:
                 df = pd.concat([df, temp], ignore_index=True)
         return df
 
+    def get_omop_person_table(self) -> pd.DataFrame:
+        with self.engine.connect() as connection:
+            df = pd.read_sql(
+                text(
+                    f"""SELECT person_id, person_source_value from {os.getenv("POSTGRES_OMOP_SCHEMA")}.person;"""
+                ),
+                con=connection
+            )
+            return df
+
     def get_allergy_concepts(self) -> pd.DataFrame:
         with self.engine.connect() as connection:
-            connection.execute(
-                text(f'SET search_path TO {os.getenv("POSTGRES_OMOP_SCHEMA")}'))
             df = pd.read_sql(
                 text(
                     f"""select concept_id, concept_name from {os.getenv("POSTGRES_OMOP_SCHEMA")}.concept where concept_name like 'Allergy to %';"""

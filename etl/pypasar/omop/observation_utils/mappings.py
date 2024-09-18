@@ -27,6 +27,16 @@ class ObservationMappings():
         return df[[observation_id_mapping["omop"]]]
 
     @mapping_wrapper
+    def map_person_id(df: pd.DataFrame, omop_person_df: pd.DataFrame) -> pd.DataFrame:
+        '''Maps pasar anon_case_no to omop person.person_source_value'''
+        person_id_mapping = ObservationMappingConfig.person_id_mapping
+
+        # Left join on df
+        df = df.merge(omop_person_df,
+                      left_on=person_id_mapping["pasar"], right_on='person_source_value', how='left')
+        return df[[person_id_mapping["omop"]]]
+
+    @mapping_wrapper
     def map_observation_date(df: pd.DataFrame) -> pd.DataFrame:
         observation_date_mapping = ObservationMappingConfig.observation_date_mapping
         df = df.rename(

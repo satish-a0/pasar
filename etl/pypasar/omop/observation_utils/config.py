@@ -3,6 +3,12 @@ class ObservationMappingConfig():
         "pasar": ["id", "session_startdate"],
         "omop": "observation_id"
     }
+
+    person_id_mapping = {
+        "pasar": "anon_case_no",
+        "omop": "person_id"
+    }
+
     observation_date_mapping = {
         "pasar": "session_startdate",
         "omop": "observation_date"
