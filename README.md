@@ -85,14 +85,14 @@ If you have an existing R Setup and familiar with OHDSI Packages then setup the 
 
 ### **PostgresGCP** Class
 
-**PostgresGCP** is a helper class that connects to the GCP Postgres. This is to provide a programatic way to connect to source postgres database hosted at GCP postgres from the GCP VM.
+**PostgresGCP** is a helper class that connects to the GCP Postgres from the GCP VM. This is to provide a programatic way to connect to source postgres database hosted at GCP postgres from the GCP VM.
 
 In order to use this class, please fill in the following env variables in your `.env` file.
 
 - GCP_POSTGRES_IP
 - GCP_POSTGRES_PASSWORD
 
-Run `python ./pypasar/db/utils/PostgresGCP.py` to ensure that everything is setup correctly and a query to GCP postgres is successful.
+While in the GCP VM, run `python ./pypasar/db/utils/PostgresGCP.py` to ensure that everything is setup correctly and a query to GCP postgres is successful.
 
 ### Cleanup
 
