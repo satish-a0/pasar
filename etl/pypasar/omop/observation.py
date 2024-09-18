@@ -136,7 +136,7 @@ class observation:
         # NO MAPPING
 
         # # # log random sample from final self.mapped_df for sanity check
-        logger.info("Final results")
+        logger.info("Sample results")
         logger.info(self.mapped_df.sample(15).sort_index())
 
         logger.info(
