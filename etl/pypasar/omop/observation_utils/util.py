@@ -5,7 +5,7 @@ logger = logging.getLogger(__name__)
 
 
 def mapping_wrapper(method):
-    '''Helper wrapper to for mapping functions to time function and print sample'''
+    '''Helper wrapper for mapping functions to time function and print sample'''
     @wraps(method)
     def wrapped(*args, **kwargs):
         start = time.process_time()
