@@ -6,8 +6,8 @@ from dotenv import load_dotenv
 
 from ..db.utils.postgres import postgres
 
-from .observation_utils.mappings import ObservationMappings
-from .observation_utils.config import SOURCE_TABLE_COL_NAME, SOURCE_TABLES, ObservationMappingConfig
+from .observation_utils.mappings import ObservationMapping
+from .observation_utils.config import SOURCE_TABLE_COL_NAME, SOURCE_TABLES
 
 import logging
 logger = logging.getLogger(__name__)
@@ -53,13 +53,15 @@ class observation:
         # Read from source
         df = self.get_data()
 
+        observation_mapping = ObservationMapping()
+
         # # # observation_id
-        res = ObservationMappings.map_observation_id(df)
+        res = observation_mapping.map_observation_id(df)
         self.mapped_df = pd.concat([self.mapped_df, res], axis=1)
 
         # # # person_id
         omop_person_df = self.get_omop_person_table()
-        res = ObservationMappings.map_person_id(df, omop_person_df)
+        res = observation_mapping.map_person_id(df, omop_person_df)
         self.mapped_df = pd.concat([self.mapped_df, res], axis=1)
 
         # # # observation_concept_id
@@ -69,28 +71,27 @@ class observation:
             1, len(self.mapped_df) + 1)
 
         # # # observation_date
-        res = ObservationMappings.map_observation_date(df)
+        res = observation_mapping.map_observation_date(df)
         self.mapped_df = pd.concat([self.mapped_df, res], axis=1)
 
         # # # observation_datetime
         # NO MAPPING
 
         # # # observation_type_concept_id
-        res = ObservationMappings.map_observation_type_concept_id(df)
+        res = observation_mapping.map_observation_type_concept_id(df)
         self.mapped_df = pd.concat([self.mapped_df, res], axis=1)
 
         # # # value_as_number
-        res = ObservationMappings.map_value_as_number(df)
+        res = observation_mapping.map_value_as_number(df)
         self.mapped_df = pd.concat([self.mapped_df, res], axis=1)
 
         # # # value_as_string
-        res = ObservationMappings.concatenate_multiple_columns_into_one(
-            df, ObservationMappingConfig.value_as_string_mapping)
+        res = observation_mapping.map_value_as_string(df)
         self.mapped_df = pd.concat([self.mapped_df, res], axis=1)
 
         # # # value_as_concept_id
         allergy_concepts_df = self.get_allergy_concepts()
-        res = ObservationMappings.map_value_as_concept_id(
+        res = observation_mapping.map_value_as_concept_id(
             df, allergy_concepts_df)
         self.mapped_df = pd.concat([self.mapped_df, res], axis=1)
 
@@ -104,15 +105,14 @@ class observation:
         # NO MAPPING
 
         # # # visit_occurrence_id
-        res = ObservationMappings.map_visit_occurrence_id(df)
+        res = observation_mapping.map_visit_occurrence_id(df)
         self.mapped_df = pd.concat([self.mapped_df, res], axis=1)
 
         # # # visit_detail_id
         # NO MAPPING
 
         # # # observation_source_value
-        res = ObservationMappings.concatenate_multiple_columns_into_one(
-            df, ObservationMappingConfig.observation_source_value_mapping)
+        res = observation_mapping.map_observation_source_value(df)
         self.mapped_df = pd.concat([self.mapped_df, res], axis=1)
 
         # # # observation_source_concept_id
@@ -125,8 +125,7 @@ class observation:
         # NO MAPPING
 
         # # # value_source_value
-        res = ObservationMappings.concatenate_multiple_columns_into_one(
-            df, ObservationMappingConfig.value_source_value_mapping)
+        res = observation_mapping.map_value_source_value(df)
         self.mapped_df = pd.concat([self.mapped_df, res], axis=1)
 
         # # # observation_event_id

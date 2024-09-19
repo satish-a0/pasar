@@ -4,9 +4,24 @@ from .config import SOURCE_TABLE_COL_NAME, ObservationMappingConfig
 from .util import mapping_wrapper
 
 
-class ObservationMappings():
+class ObservationMapping():
+
+    def __concatenate_multiple_columns_into_one(self, df: pd.DataFrame, observation_mapping: any) -> pd.DataFrame:
+        for table_source_name, columns in observation_mapping["pasar"]:
+            # Concat all text based on table and column config in value_as_string_config
+            df.loc[df[SOURCE_TABLE_COL_NAME] == table_source_name, observation_mapping["omop"]] = df[columns].apply(
+                lambda x: ','.join(x.astype(str)),
+                axis=1
+            )
+
+        # TODO: TO REMOVE: TEMPOARILY ADD SO THAT INGESTION CAN WORK DUE TO VARCHAR(50) CONSTRAINT
+        df[observation_mapping["omop"]
+           ] = df[observation_mapping["omop"]].str.slice(0, 50)
+
+        return df[[observation_mapping["omop"]]]
+
     @mapping_wrapper
-    def map_observation_id(df: pd.DataFrame) -> pd.DataFrame:
+    def map_observation_id(self, df: pd.DataFrame) -> pd.DataFrame:
         observation_id_mapping = ObservationMappingConfig.observation_id_mapping
         # Sort and reset index to set dataframe index as running index
         df = df.sort_values(observation_id_mapping["pasar"], ascending=[
@@ -27,7 +42,7 @@ class ObservationMappings():
         return df[[observation_id_mapping["omop"]]]
 
     @mapping_wrapper
-    def map_person_id(df: pd.DataFrame, omop_person_df: pd.DataFrame) -> pd.DataFrame:
+    def map_person_id(self, df: pd.DataFrame, omop_person_df: pd.DataFrame) -> pd.DataFrame:
         '''Maps pasar anon_case_no to omop person.person_source_value'''
         person_id_mapping = ObservationMappingConfig.person_id_mapping
 
@@ -37,14 +52,14 @@ class ObservationMappings():
         return df[[person_id_mapping["omop"]]]
 
     @mapping_wrapper
-    def map_observation_date(df: pd.DataFrame) -> pd.DataFrame:
+    def map_observation_date(self, df: pd.DataFrame) -> pd.DataFrame:
         observation_date_mapping = ObservationMappingConfig.observation_date_mapping
         df = df.rename(
             columns={observation_date_mapping["pasar"]: observation_date_mapping["omop"]})
         return df[[observation_date_mapping["omop"]]]
 
     @mapping_wrapper
-    def map_observation_type_concept_id(df: pd.DataFrame) -> pd.DataFrame:
+    def map_observation_type_concept_id(self, df: pd.DataFrame) -> pd.DataFrame:
         observation_type_concept_id_mapping = ObservationMappingConfig.observation_type_concept_id_mapping
 
         # Just set observation_type_concept_id as hardcoded value
@@ -52,31 +67,31 @@ class ObservationMappings():
         return df[[observation_type_concept_id_mapping["omop"]]]
 
     @mapping_wrapper
-    def map_visit_occurrence_id(df: pd.DataFrame) -> pd.DataFrame:
+    def map_visit_occurrence_id(self, df: pd.DataFrame) -> pd.DataFrame:
         visit_occurrence_id_mapping = ObservationMappingConfig.visit_occurrence_id_mapping
 
         df[visit_occurrence_id_mapping["omop"]
            ] = df[visit_occurrence_id_mapping["pasar"]]
         return df[[visit_occurrence_id_mapping["omop"]]]
 
-    # Shared between value_as_string and observation_source_value
-    @mapping_wrapper
-    def concatenate_multiple_columns_into_one(df: pd.DataFrame, observation_mapping: any) -> pd.DataFrame:
-        for table_source_name, columns in observation_mapping["pasar"]:
-            # Concat all text based on table and column config in value_as_string_config
-            df.loc[df[SOURCE_TABLE_COL_NAME] == table_source_name, observation_mapping["omop"]] = df[columns].apply(
-                lambda x: ','.join(x.astype(str)),
-                axis=1
-            )
-
-        # TODO: TO REMOVE: TEMPOARILY ADD SO THAT INGESTION CAN WORK DUE TO VARCHAR(50) CONSTRAINT
-        df[observation_mapping["omop"]
-           ] = df[observation_mapping["omop"]].str.slice(0, 50)
-
-        return df[[observation_mapping["omop"]]]
 
     @mapping_wrapper
-    def map_value_as_number(df: pd.DataFrame) -> pd.DataFrame:
+    def map_value_as_string(self, df: pd.DataFrame) -> pd.DataFrame:
+        value_as_string_mapping = ObservationMappingConfig.value_as_string_mapping
+        return self.__concatenate_multiple_columns_into_one(df, value_as_string_mapping)
+
+    @mapping_wrapper
+    def map_observation_source_value(self, df: pd.DataFrame) -> pd.DataFrame:
+        observation_source_value_mapping = ObservationMappingConfig.observation_source_value_mapping
+        return self.__concatenate_multiple_columns_into_one(df, observation_source_value_mapping)
+
+    @mapping_wrapper
+    def map_value_source_value(self, df: pd.DataFrame) -> pd.DataFrame:
+        value_source_value_mapping = ObservationMappingConfig.value_source_value_mapping
+        return self.__concatenate_multiple_columns_into_one(df, value_source_value_mapping)
+
+    @mapping_wrapper
+    def map_value_as_number(self, df: pd.DataFrame) -> pd.DataFrame:
         value_as_number_mapping = ObservationMappingConfig.value_as_number_mapping
 
         for table_source_name, column in value_as_number_mapping["pasar"]:
@@ -85,7 +100,7 @@ class ObservationMappings():
         return df[[value_as_number_mapping["omop"]]]
 
     @mapping_wrapper
-    def map_value_as_concept_id(df: pd.DataFrame, allergy_concepts_df: pd.DataFrame) -> pd.DataFrame:
+    def map_value_as_concept_id(self, df: pd.DataFrame, allergy_concepts_df: pd.DataFrame) -> pd.DataFrame:
         value_as_concept_id_mapping = ObservationMappingConfig.value_as_concept_id_mapping
 
         # Strip "Allergy to " prefix from concept_name
