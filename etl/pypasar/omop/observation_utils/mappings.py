@@ -9,6 +9,7 @@ class ObservationMapping():
     def __concatenate_multiple_columns_into_one(self, df: pd.DataFrame, observation_mapping: any) -> pd.DataFrame:
         for table_source_name, columns in observation_mapping["pasar"]:
             # Concat all text based on table and column config in value_as_string_config
+            # TODO: Look into optimizing function
             df.loc[df[SOURCE_TABLE_COL_NAME] == table_source_name, observation_mapping["omop"]] = df[columns].apply(
                 lambda x: ','.join(x.astype(str)),
                 axis=1
@@ -73,7 +74,6 @@ class ObservationMapping():
         df[visit_occurrence_id_mapping["omop"]
            ] = df[visit_occurrence_id_mapping["pasar"]]
         return df[[visit_occurrence_id_mapping["omop"]]]
-
 
     @mapping_wrapper
     def map_value_as_string(self, df: pd.DataFrame) -> pd.DataFrame:

@@ -145,9 +145,12 @@ class observation:
     def ingest(self):
         # Ingest into OMOP Table
         logger.info("Ingesting into OMOP Table...")
+        start = time.process_time()
         with self.engine.connect() as connection:
             self.mapped_df.to_sql(name='observation',
                                   con=connection, if_exists='append', schema=os.getenv("POSTGRES_OMOP_SCHEMA"), index=False)
+        logger.info(
+            f"Total Time taken for observation ingestion: {time.process_time() - start:.3f}s")
         logger.info("Ingestion Done")
 
     def finalize(self):
