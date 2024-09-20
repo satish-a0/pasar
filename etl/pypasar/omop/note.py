@@ -37,11 +37,11 @@ class note:
     def process(self):
         # Set SCHEMA
         omop_schema = os.getenv("POSTGRES_OMOP_SCHEMA")
-        source_schema = os.getenv("POSTGRES_SOURCE_SCHEMA")
+        # source_schema = os.getenv("POSTGRES_SOURCE_SCHEMA")
 
         with self.engine.connect() as connection:
             with connection.begin():
-                # Read from source and create a staging table (stg__death)
+                # Read from source and create a staging table (stg__note)
                 # create a staging table to perform transformation and joining other required tables
                 connection.execute(
                     text(f'''
@@ -68,10 +68,10 @@ class note:
 
                 # Note: will join other CDM tables once populated with data
                 # No inserting data into the actual CDM table as stg_note has incomplete data
-                # Read from stg__death and insert into death
+                # Read from stg__note and insert into CDM table note
                 # """ connection.execute(
                 #     text(f'''
-                #         INSERT INTO {omop_schema}.death (
+                #         INSERT INTO {omop_schema}.note (
                 #             note_id,
                 #             person_id,
                 #             note_date,
