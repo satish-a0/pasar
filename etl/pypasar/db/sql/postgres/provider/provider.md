@@ -6,7 +6,7 @@
 
 ### Reading from intra_op__operation
 
-![](/PASAR_ETL_Spec/md_files/image40.png)
+![](https://sidata.plus/PASAR_ETL_Spec/md_files/image40.png)
 
 <table>
 
