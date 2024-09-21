@@ -6,6 +6,7 @@
 -- DATE        VERS  INITIAL  CHANGE DESCRIPTION
 -- ----------  ----  -------  ----------------------------------------
 -- 2024-09-14  1.00           Initial create
+-- 2024-09-21  2.00           Set the default visit_concept_id to 0 — need to map to the standard concept IDs
 -- *******************************************************************
 
 INSERT INTO {OMOP_SCHEMA}.visit_occurrence
@@ -31,7 +32,7 @@ INSERT INTO {OMOP_SCHEMA}.visit_occurrence
 SELECT
     visit_occurrence_id,
     person_id,
-    NULL AS visit_concept_id,
+    0 AS visit_concept_id,
     visit_start_date,
     NULL AS visit_start_datetime,
     visit_end_date,
