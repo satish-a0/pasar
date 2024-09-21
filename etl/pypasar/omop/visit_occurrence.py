@@ -27,9 +27,9 @@ class visit_occurrence:
                 # Set the schema for subsequent SQL operations
                 connection.execute(
                     text(f'SET search_path TO {os.getenv("POSTGRES_OMOP_SCHEMA")}'))
-                # Drop the view if it exists
-                connection.execute(text("DROP VIEW IF EXISTS stg__visit_occurrence"))
-                connection.execute(text("DROP VIEW IF EXISTS int__visit_occurrence"))
+                # Drop view along with its dependent objects
+                connection.execute(text("DROP VIEW IF EXISTS stg__visit_occurrence CASCADE"))
+                connection.execute(text("DROP VIEW IF EXISTS int__visit_occurrence CASCADE"))
                 # Clear all existing rows from the visit_occurrence table
                 connection.execute(text("TRUNCATE TABLE visit_occurrence"))
 
