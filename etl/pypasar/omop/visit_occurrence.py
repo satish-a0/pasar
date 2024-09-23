@@ -36,9 +36,9 @@ class visit_occurrence:
     def process(self):
         # List of SQL file paths
         sql_files = [
-            os.path.join(os.getenv("BASE_PATH"), "visit_occurrence/stg__visit_occurrence.sql"),
-            os.path.join(os.getenv("BASE_PATH"), "visit_occurrence/int__visit_occurrence.sql"),
-            os.path.join(os.getenv("BASE_PATH"), "visit_occurrence/visit_occurrence.sql")
+            os.path.join(os.getenv("BASE_PATH"), "visit_occurrence", "stg__visit_occurrence.sql"),
+            os.path.join(os.getenv("BASE_PATH"), "visit_occurrence", "int__visit_occurrence.sql"),
+            os.path.join(os.getenv("BASE_PATH"), "visit_occurrence", "visit_occurrence.sql")
         ]
         self.execute_sql_files(sql_files)
 
