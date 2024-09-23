@@ -36,7 +36,7 @@ class condition_occurrence:
     def process(self):
         total_count_source_postop_discharge = self.fetch_total_count_source_postop_discharge()
         print(f"Total count {total_count_source_postop_discharge}")
-        while self.offset < total_count_source_postop_discharge: # Fetch and process in batches
+        while self.offset <= total_count_source_postop_discharge: # Fetch and process in batches
             source_batch = self.retrieve()
             transformed_batch = self.transform(source_batch)
             del source_batch
