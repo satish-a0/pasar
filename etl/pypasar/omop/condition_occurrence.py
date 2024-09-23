@@ -50,11 +50,11 @@ class condition_occurrence:
         source_postop_discharge_df = pd.DataFrame(source_batch.fetchall())
         source_postop_discharge_df.columns = {'anon_case_no': str, 'id': int, 'diagnosis_date': 'datetime64[ns]', 'diagnosis_code': str, 'session_id': int}.keys()
         print(source_postop_discharge_df.head(1))
-        print(f"offset {self.offset} limit {self.limit} batch_count {len(source_postop_discharge_df)} retrieved")
+        print(f"offset {self.offset} limit {self.limit} batch_count {len(source_postop_discharge_df)} retrieved..")
         return source_postop_discharge_df
     
     def transform(self, source_batch):
-        self.condition_occurrence_schema = {
+        condition_occurrence_schema = {
             'condition_occurrence_id': int,
             'person_id': int,
             'condition_concept_id': int,
@@ -66,7 +66,7 @@ class condition_occurrence:
             'condition_source_value': str
         }
         # Initialize dataframe and display columns info
-        condition_occ_df = pd.DataFrame(columns=self.condition_occurrence_schema.keys()).astype(self.condition_occurrence_schema)
+        condition_occ_df = pd.DataFrame(columns=condition_occurrence_schema.keys()).astype(condition_occurrence_schema)
         # print(f"source {len(source_batch)}")
         
         if len(source_batch) > 0:
@@ -86,6 +86,7 @@ class condition_occurrence:
 
     def ingest(self, transformed_batch):
         transformed_batch.to_sql(name='condition_occurrence', schema=self.omop_schema, con=self.engine, if_exists='append', index=False)
+        print(f"offset {self.offset} limit {self.limit} batch_count {len(source_postop_discharge_df)} ingested..")
 
     def fetch_total_count_source_postop_discharge(self):
         with self.engine.connect() as connection:
@@ -103,4 +104,5 @@ class condition_occurrence:
 
 
     def finalize(self):
+        # cleanup
         self.engine.dispose()
