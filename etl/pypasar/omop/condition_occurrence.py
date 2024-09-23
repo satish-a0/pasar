@@ -17,9 +17,6 @@ class condition_occurrence:
         self.omop_schema = os.getenv("POSTGRES_OMOP_SCHEMA")
         self.source_postop_schema = os.getenv("POSTGRES_SOURCE_POSTOP_SCHEMA")
         self.limit, self.offset = int(os.getenv("PROCESSING_BATCH_SIZE")), 0
-        # d_1 = {'condition_occurrence_id': 1, 'person_id': 1}
-        # self.condition_occ_df = pd.concat([self.condition_occ_df, pd.DataFrame([d_1], columns=d_1.keys())], ignore_index=True)
-        # self.condition_occ_df.fillna({'condition_type_concept_id':32879, 'condition_status_concept_id':32896}, inplace=True, downcast='infer')
 
     def execute(self):
         try:
@@ -103,9 +100,6 @@ class condition_occurrence:
                 res = connection.execute(
                     text(f'select anon_case_no, id, diagnosis_date, diagnosis_code, session_id from {self.source_postop_schema}.discharge limit {self.limit} offset {self.offset}'))
                 return res
-
-    def populate_default_values(self):
-        self.condition_occ_df.fillna({'condition_type_concept_id':32879, 'condition_status_concept_id':32896}, inplace=True, downcast='infer')
 
 
     def finalize(self):
