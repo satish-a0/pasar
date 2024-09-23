@@ -60,6 +60,8 @@ class condition_occurrence:
             'condition_concept_id': int,
             'condition_start_date': 'datetime64[ns]',
             'condition_start_datetime': 'datetime64[ns]',
+            'condition_end_date': 'datetime64[ns]',
+            'condition_end_datetime': 'datetime64[ns]',
             'condition_type_concept_id': int,
             'condition_status_concept_id': int,
             'visit_occurrence_id': int,
@@ -72,10 +74,13 @@ class condition_occurrence:
         if len(source_batch) > 0:
             condition_occ_df['condition_start_date'] = pd.to_datetime(source_batch['diagnosis_date']).dt.date
             condition_occ_df['condition_start_datetime'] = source_batch['diagnosis_date']
+            condition_occ_df['condition_end_date'] = pd.to_datetime(source_batch['diagnosis_date']).dt.date
+            condition_occ_df['condition_end_datetime'] = source_batch['diagnosis_date']
             condition_occ_df['condition_type_concept_id'] = 32879
             condition_occ_df['condition_status_concept_id'] = 32896
             condition_occ_df['condition_concept_id'] = 0 # TODO: Update
             condition_occ_df['person_id'] = 0 # TODO: Update
+            condition_occ_df['visit_occurrence_id'] = 0 # TODO: Update
             condition_occ_df['condition_source_value'] = source_batch['diagnosis_code']
             condition_occ_df['condition_occurrence_id'] = range(self.offset + 1, self.offset + len(source_batch) + 1)
             #print(condition_occ_df.head(1))
@@ -86,7 +91,7 @@ class condition_occurrence:
 
     def ingest(self, transformed_batch):
         transformed_batch.to_sql(name='condition_occurrence', schema=self.omop_schema, con=self.engine, if_exists='append', index=False)
-        print(f"offset {self.offset} limit {self.limit} batch_count {len(source_postop_discharge_df)} ingested..")
+        print(f"offset {self.offset} limit {self.limit} batch_count {len(transformed_batch)} ingested..")
 
     def fetch_total_count_source_postop_discharge(self):
         with self.engine.connect() as connection:
@@ -95,7 +100,7 @@ class condition_occurrence:
                 return res.first()[0]
 
     def fetch_in_batch_source_postop_discharge(self):
-        # TODO: Fetch person_id from person table
+        # TODO: Fetch person_id from person table, visit_occurrence_id from visit_occurrence
         with self.engine.connect() as connection:
             with connection.begin():
                 res = connection.execute(
