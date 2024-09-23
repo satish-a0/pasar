@@ -48,7 +48,7 @@ class device_exposure:
                     text(f'''
                         CREATE OR REPLACE VIEW {omop_schema}.stg__device_exposure AS
                         SELECT distinct
-                            ROW_NUMBER() OVER (ORDER BY source.id, endotracheal_tube_insertion_date, 
+                            ROW_NUMBER() OVER (ORDER BY source_icu.id, endotracheal_tube_insertion_date, 
                             tracheostomy_tube_insertion_date) 
                             AS device_exposure_id, -- Autogenerate number
                          
@@ -57,46 +57,45 @@ class device_exposure:
                          
                             -- Handle device_concept_id
                             CASE
-                                WHEN source.endotracheal_tube_insertion_date IS NOT NULL 
+                                WHEN source_icu.endotracheal_tube_insertion_date IS NOT NULL 
                                 THEN 4097216
-                                WHEN source.tracheostomy_tube_insertion_date IS NOT NULL
-                                THEN 2616666
+                                WHEN source_icu.tracheostomy_tube_insertion_date IS NOT NULL
+                                THEN 4044008
                                 ELSE 0
                             END AS device_concept_id,
                          
                             -- Handle device_exposure_start_date
-                            COALESCE(source.endotracheal_tube_insertion_date, source.tracheostomy_tube_insertion_date) 
+                            COALESCE(source_icu.endotracheal_tube_insertion_date, source_icu.tracheostomy_tube_insertion_date) 
                             AS device_exposure_start_date,
                          
                             -- Handle device_exposure_end_date
-                            COALESCE(source.endotracheal_tube_removal_date, source.tracheostomy_tube_removal_date) 
+                            COALESCE(source_icu.endotracheal_tube_removal_date, source_icu.tracheostomy_tube_removal_date) 
                             AS device_exposure_end_date,
                          
                             -- Handle device_source_value based on which insertion date is used
                             CASE
-                                WHEN source.endotracheal_tube_insertion_date IS NOT NULL 
+                                WHEN source_icu.endotracheal_tube_insertion_date IS NOT NULL 
                                 THEN 'Endotracheal tube'
-                                WHEN source.tracheostomy_tube_insertion_date IS NOT NULL
+                                WHEN source_icu.tracheostomy_tube_insertion_date IS NOT NULL
                                 THEN 'Tracheostomy tube'
                                 ELSE NULL
                             END AS device_source_value,
                          
                             32879 AS device_type_concept_id, -- Registry concept id
                             1 AS quantity,
-                            source.session_id AS visit_occurrence_id
-                        FROM {source_schema}.icu AS source
+                            source_icu.session_id AS visit_occurrence_id
+                        FROM {source_schema}.icu AS source_icu
                         JOIN {omop_sqldev_schema}.person AS cdm
-                            ON source.anon_case_no=cdm.person_source_value
+                            ON source_icu.anon_case_no=cdm.person_source_value
                         WHERE
-                            source.endotracheal_tube_insertion_date IS NOT NULL OR
-                            source.tracheostomy_tube_insertion_date IS NOT NULL -- Filter rows where both insertion dates are NULL
+                            source_icu.endotracheal_tube_insertion_date IS NOT NULL OR
+                            source_icu.tracheostomy_tube_insertion_date IS NOT NULL -- Filter rows where both insertion dates are NULL
                         
                         UNION ALL
-                 
+
                         SELECT DISTINCT
-                            ROW_NUMBER() OVER (ORDER BY s.id, session_startdate) + (
-                                SELECT COALESCE(MAX(device_exposure_id), 0)
-                                FROM {omop_schema}.stg__device_exposure) AS device_exposure_id,
+                            ROW_NUMBER() OVER (ORDER BY s.id, session_startdate) + (SELECT DISTINCT COUNT(id)
+                                FROM {source_schema}.icu) AS device_exposure_id,
                         
                             cdm.person_id AS person_id,
                             cdm.person_source_value AS person_source_value,
@@ -104,7 +103,7 @@ class device_exposure:
                             2616666 AS device_concept_id,
                         
                             s.session_startdate AS device_exposure_start_date,
-                            null AS device_exposure_end_date,
+                            CAST(NULL AS DATE) AS device_exposure_end_date,
                         
                             'CPAP' AS device_source_value,
                         
