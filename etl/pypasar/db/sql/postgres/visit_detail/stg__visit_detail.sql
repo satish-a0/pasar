@@ -28,6 +28,7 @@ CREATE OR REPLACE VIEW {OMOP_SCHEMA}.stg__visit_detail AS
             ) AS row_num
         FROM postop.icu
         WHERE icu_admission_date IS NOT NULL 
+            AND icu_discharge_date IS NOT NULL
     ),
 
     -- Ensure only distinct rows with corresponding id and session_startdate
