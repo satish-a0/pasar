@@ -28,16 +28,18 @@ class visit_detail:
                 # Set the schema for subsequent SQL operations
                 connection.execute(
                     text(f'SET search_path TO {os.getenv("POSTGRES_OMOP_SCHEMA")}'))
-                # Drop the view if it exists
-                connection.execute(text("DROP VIEW IF EXISTS stg__visit_detail"))
+                # Drop view along with its dependent objects
+                connection.execute(text("DROP VIEW IF EXISTS stg__visit_detail CASCADE"))
+                connection.execute(text("DROP VIEW IF EXISTS int__visit_detail CASCADE"))
                 # Clear all existing rows from the visit_detail table
                 connection.execute(text("TRUNCATE TABLE visit_detail"))
 
     def process(self):
         # List of SQL file paths
         sql_files = [
-            os.path.join(os.getenv("BASE_PATH"), "visit_detail/stg__visit_detail.sql"),
-            os.path.join(os.getenv("BASE_PATH"), "visit_detail/visit_detail.sql")
+            os.path.join(os.getenv("BASE_PATH"), "visit_detail", "stg__visit_detail.sql"),
+            os.path.join(os.getenv("BASE_PATH"), "visit_detail", "int__visit_detail.sql"),
+            os.path.join(os.getenv("BASE_PATH"), "visit_detail", "visit_detail.sql")
         ]
         self.execute_sql_files(sql_files)
 
