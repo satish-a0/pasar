@@ -1,29 +1,40 @@
--- Create or replace the staging view for visit_detail
-CREATE OR REPLACE VIEW {OMOP_SCHEMA}.stg__visit_detail AS
-    -- Extract relevant columns from the pre_op.char table
-    -- Create or replace the staging view for visit_detail
+-- *******************************************************************
+-- NAME: stg__visit_detail.sql
+-- DESC: Create the staging view - visit_detail
+-- *******************************************************************
+-- CHANGE LOG:
+-- DATE        VERS  INITIAL  CHANGE DESCRIPTION
+-- ----------  ----  -------  ----------------------------------------
+-- 2024-09-18  1.00           Initial create
+-- *******************************************************************
 
-    -- Extract relevant columns from the pre_op.char table
-    WITH source AS (
-        SELECT DISTINCT
-            -- po.id AS po_id, 
-            po.session_startdate AS po_session_startdate,
-            po.anon_case_no,
-            po.session_id,
-            po.icu_admission_date,
-            COALESCE((po.icu_admission_date + operation_starttime::interval), '2000-01-01') AS visit_detail_start_datetime,
-            COALESCE((po.icu_discharge_date + operation_endtime::interval), '2000-01-01') AS visit_detail_end_datetime,
-            po.icu_discharge_date,
-            po.icu_location
-        FROM postop.icu po
-        WHERE icu_admission_date is not null 
-    
+-- Create or replace the staging view for the visit_detail table
+CREATE OR REPLACE VIEW {OMOP_SCHEMA}.stg__visit_detail AS
+    -- Extract relevant columns from the post_op.icu table
+    WITH postop__icu AS (
+        SELECT
+            id,
+            anon_case_no,
+            session_id,
+            session_startdate,
+            icu_admission_date,
+            icu_admission_time,
+            icu_discharge_date,
+            icu_discharge_time,
+            icu_location,
+            ROW_NUMBER() OVER (
+                PARTITION BY anon_case_no, session_id, session_startdate, icu_admission_date, icu_admission_time, icu_discharge_date, icu_discharge_time, icu_location
+                ORDER BY id
+            ) AS row_num
+        FROM postop.icu
+        WHERE icu_admission_date IS NOT NULL 
     ),
 
-   unique_operation AS (
-   SELECT DISTINCT session_id, anon_case_no, anon_surgeon_name
-        FROM intraop.operation
-        WHERE anon_surgeon_name is not null
+    -- Ensure only distinct rows with corresponding id and session_startdate
+    filtered_postop__icu AS (
+        SELECT *
+        FROM postop__icu
+        WHERE row_num = 1
     ),
    
    mapped AS (
