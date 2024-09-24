@@ -52,9 +52,9 @@ CREATE OR REPLACE VIEW {OMOP_SCHEMA}.stg__visit_detail AS
             icu.session_id AS session_id,
             icu.session_startdate AS session_startdate,
             icu.icu_admission_date AS visit_detail_start_date,
-            icu.icu_admission_time AS visit_detail_start_datetime,
+            (CONCAT(icu.icu_admission_date, ' ', COALESCE(icu.icu_admission_time::text, '00:00:00')))::timestamp AS visit_detail_start_datetime,
             icu.icu_discharge_date AS visit_detail_end_date,
-            icu.icu_discharge_time AS visit_detail_end_datetime,
+            (CONCAT(icu.icu_discharge_date, ' ', COALESCE(icu.icu_discharge_time::text, '00:00:00')))::timestamp AS visit_detail_end_datetime,
             icu.icu_location AS icu_location,
             op.anon_surgeon_name AS anon_surgeon_name
         FROM filtered_postop__icu AS icu
