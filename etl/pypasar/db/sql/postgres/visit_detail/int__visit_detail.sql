@@ -24,7 +24,10 @@ CREATE OR REPLACE VIEW {OMOP_SCHEMA}.int__visit_detail AS
             stg__vd.visit_detail_end_date AS visit_detail_end_date,
             stg__vd.visit_detail_end_datetime AS visit_detail_end_datetime,
             pr.provider_id AS provider_id,
-            cs.care_site_id AS care_site_id
+            cs.care_site_id AS care_site_id,
+            vo.visit_occurrence_id AS visit_occurrence_id,
+            stg__vd.id AS id,
+            stg__vd.session_startdate AS session_startdate
         FROM {OMOP_SCHEMA}.stg__visit_detail AS stg__vd
         -- Join with the Person table
         LEFT JOIN {OMOP_SCHEMA}.person AS p
@@ -47,5 +50,8 @@ CREATE OR REPLACE VIEW {OMOP_SCHEMA}.int__visit_detail AS
         visit_detail_end_date,
         visit_detail_end_datetime,
         provider_id,
-        care_site_id
+        care_site_id,
+        visit_occurrence_id,
+        id,                             -- For generating IDs         
+        session_startdate               -- For generating IDs
     FROM final;
