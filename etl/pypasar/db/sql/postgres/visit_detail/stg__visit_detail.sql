@@ -30,67 +30,48 @@ CREATE OR REPLACE VIEW {OMOP_SCHEMA}.stg__visit_detail AS
         WHERE icu_admission_date IS NOT NULL 
             AND icu_discharge_date IS NOT NULL
     ),
-
     -- Ensure only distinct rows with corresponding id and session_startdate
     filtered_postop__icu AS (
         SELECT *
         FROM postop__icu
         WHERE row_num = 1
     ),
-   
-   mapped AS (
-        SELECT opr.anon_surgeon_name,
-               person.person_id,
-               s.session_id,
-               s.anon_case_no,
-               s.icu_admission_date,
-               s.visit_detail_start_datetime,
-               s.icu_discharge_date,
-               s.visit_detail_end_datetime,
-               s.icu_location
-        FROM source AS s
-		LEFT JOIN unique_operation opr
-           ON s.anon_case_no = opr.anon_case_no AND s.session_id = opr.session_id
-        LEFT JOIN omop_sqldev_schema.person 
-           ON person.person_source_value = s.anon_case_no
-        WHERE icu_admission_date is not null and icu_discharge_date is not null
-        ----------------------------mapped provider--------------------------------
-        -- LEFT JOIN provider pd 
-        --   ON s.anon_surgeon_name = pd.provider_source_value
-
-        ---------------------------mapped care_site--------------------------------
-        -- LEFT JOIN care_site cs 
-        --   ON s.icu_location = cs.care_site__source_value 
-
-        --------------------------mapped visit_occurrence--------------------------
-        -- LEFT JOIN visit_occurrence vo 
-        --   ON s.session_id = vo.session_id
-        
+    -- Extract distinct relevant columns from the intra_op.operation table
+    intraop__operation AS (
+        SELECT DISTINCT 
+            session_id, 
+            anon_case_no, 
+            anon_surgeon_name
+        FROM intraop.operation
     ),
-
-    renamed AS (
-    SELECT
-        ROW_NUMBER() OVER (ORDER by icu_admission_date , session_id) AS visit_detail_id,
-        person_id,
-        32037                                   AS visit_detail_concept_id,
-        icu_admission_date                      AS visit_detail_start_date,
-        visit_detail_start_datetime,
-        icu_discharge_date                      AS visit_detail_end_date,
-        visit_detail_end_datetime,
-        32879                                   AS visit_detail_type_concept_id,
-        NULL                                    AS provider_id,
-        NULL                                    AS care_site_id,
-        'ICU'                                   AS visit_detail_source_value,
-        NULL                                    AS admitted_from_concept_id,
-        NULL                                    AS admitted_from_source_value,
-        NULL                                    AS discharged_to_source_value,
-        NULL                                    AS preceding_visit_detail_id,
-        NULL                                    AS parent_visit_detail_id,
-        NULL                                    AS visit_occurrence_id
-    FROM mapped
+    -- Combine the filtered_postop__icu and intraop__operation
+    final AS (
+        SELECT 
+            icu.id AS id,
+            icu.anon_case_no AS anon_case_no,
+            icu.session_id AS session_id,
+            icu.session_startdate AS session_startdate,
+            icu.icu_admission_date AS visit_detail_start_date,
+            icu.icu_admission_time AS visit_detail_start_datetime,
+            icu.icu_discharge_date AS visit_detail_end_date,
+            icu.icu_discharge_time AS visit_detail_end_datetime,
+            icu.icu_location AS icu_location,
+            op.anon_surgeon_name AS anon_surgeon_name
+        FROM filtered_postop__icu AS icu
+        LEFT JOIN intraop__operation AS op
+            ON icu.anon_case_no = op.anon_case_no
+            AND icu.session_id = op.session_id
     )
 
-    SELECT  * from source
-    
-    
-
+    SELECT
+        -- Assign a unique visit_detail_id to each combination of session_startdate and id
+        ROW_NUMBER() OVER (ORDER by session_startdate, id) AS visit_detail_id,
+        anon_case_no,                   -- For mapping with the person_id and visit_occurrence_id fields
+        visit_detail_start_date,
+        visit_detail_start_datetime,
+        visit_detail_end_date,
+        visit_detail_end_datetime,
+        icu_location,                   -- For mapping with the care_site_id field
+        session_id,                     -- For mapping with the visit_occurrence_id field
+        anon_surgeon_name               -- For mapping with the provider_id field
+    FROM final
