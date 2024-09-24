@@ -64,13 +64,14 @@ CREATE OR REPLACE VIEW {OMOP_SCHEMA}.stg__visit_detail AS
     )
 
     SELECT
-        anon_case_no,                   -- For mapping with the person_id and visit_occurrence_id fields
-        session_id,                     -- For generating IDs and mapping with the visit_occurrence_id field
+        id,                             -- For generating IDs
+        anon_case_no,                   -- For mapping with the person_id field
         session_startdate,              -- For generating IDs
         visit_detail_start_date,
         visit_detail_start_datetime,
         visit_detail_end_date,
         visit_detail_end_datetime,
         icu_location,                   -- For mapping with the care_site_id field
-        anon_surgeon_name               -- For mapping with the provider_id field
+        anon_surgeon_name,              -- For mapping with the provider_id field
+        session_id                      -- For mapping with the visit_occurrence_id field
     FROM final;

@@ -48,4 +48,4 @@ CREATE OR REPLACE VIEW {OMOP_SCHEMA}.int__visit_detail AS
         visit_detail_end_datetime,
         provider_id,
         care_site_id
-    FROM final,
+    FROM final;
