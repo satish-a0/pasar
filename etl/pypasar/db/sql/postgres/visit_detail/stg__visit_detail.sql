@@ -26,7 +26,7 @@ CREATE OR REPLACE VIEW {OMOP_SCHEMA}.stg__visit_detail AS
                 PARTITION BY anon_case_no, session_id, session_startdate, icu_admission_date, icu_admission_time, icu_discharge_date, icu_discharge_time, icu_location
                 ORDER BY id
             ) AS row_num
-        FROM postop.icu
+        FROM {POSTOP_SCHEMA}.icu
         WHERE icu_admission_date IS NOT NULL 
             AND icu_discharge_date IS NOT NULL
     ),
@@ -42,7 +42,7 @@ CREATE OR REPLACE VIEW {OMOP_SCHEMA}.stg__visit_detail AS
             session_id, 
             anon_case_no, 
             anon_surgeon_name
-        FROM intraop.operation
+        FROM {INTRAOP_SCHEMA}.operation
     ),
     -- Combine the filtered_postop__icu and intraop__operation
     final AS (
@@ -73,4 +73,4 @@ CREATE OR REPLACE VIEW {OMOP_SCHEMA}.stg__visit_detail AS
         visit_detail_end_datetime,
         icu_location,                   -- For mapping with the care_site_id field
         anon_surgeon_name               -- For mapping with the provider_id field
-    FROM final
+    FROM final;
