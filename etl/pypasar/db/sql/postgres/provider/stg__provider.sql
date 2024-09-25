@@ -14,39 +14,38 @@ CREATE OR REPLACE VIEW {OMOP_SCHEMA}.stg__provider AS
     WITH unique_surgeons AS (
     SELECT surgeon_table.anon_surgeon_name AS name, surgeon_table.surgical_specialty AS specialty
     FROM (
-      SELECT anon_surgeon_name, surgical_specialty, count(*), ROW_NUMBER() OVER(PARTITION by anon_surgeon_name ORDER BY count(*) DESC) AS rnk
+     SELECT anon_surgeon_name, LOWER(surgical_specialty) as surgical_specialty, count(*), ROW_NUMBER() OVER(PARTITION by anon_surgeon_name ORDER BY count(*) DESC) AS rnk
       FROM {PREOP_SCHEMA}."operation"
       WHERE anon_surgeon_name IS NOT NULL
-      GROUP by anon_surgeon_name, surgical_specialty
-      ORDER BY anon_surgeon_name, count(*) DESC
+      GROUP by anon_surgeon_name, LOWER(surgical_specialty)
+      ORDER BY anon_surgeon_name, COUNT(*) DESC
     ) AS surgeon_table 
     WHERE surgeon_table.rnk = 1
   ),
   unique_anaesthetists_1 AS (
     SELECT anaesthetist_1_table.anon_plan_anaesthetist_1_name AS name, anaesthetist_1_table.plan_anaesthetist_1_type AS specialty
     FROM (
-      SELECT anon_plan_anaesthetist_1_name, plan_anaesthetist_1_type, count(*), ROW_NUMBER() OVER(PARTITION by anon_plan_anaesthetist_1_name ORDER BY count(*) DESC) AS rnk
+      SELECT anon_plan_anaesthetist_1_name, LOWER(plan_anaesthetist_1_type) as plan_anaesthetist_1_type, count(*), ROW_NUMBER() OVER(PARTITION by anon_plan_anaesthetist_1_name ORDER BY count(*) DESC) AS rnk
       FROM {PREOP_SCHEMA}."operation"
       WHERE anon_plan_anaesthetist_1_name IS NOT NULL
-      GROUP by anon_plan_anaesthetist_1_name, plan_anaesthetist_1_type
-      ORDER BY anon_plan_anaesthetist_1_name, count(*) DESC
+      GROUP by anon_plan_anaesthetist_1_name, LOWER(plan_anaesthetist_1_type)
+      ORDER BY anon_plan_anaesthetist_1_name, COUNT(*) DESC
     ) AS anaesthetist_1_table 
     WHERE anaesthetist_1_table.rnk = 1
   ),
   unique_anaesthetists_2 AS (
     SELECT anaesthetist_2_table.anon_plan_anaesthetist_2_name AS name, anaesthetist_2_table.plan_anaesthetist_2_type AS specialty
     FROM (
-      SELECT anon_plan_anaesthetist_2_name, plan_anaesthetist_2_type, count(*), ROW_NUMBER() OVER(PARTITION by anon_plan_anaesthetist_2_name ORDER BY count(*) DESC) AS rnk
+      SELECT anon_plan_anaesthetist_2_name, LOWER(plan_anaesthetist_2_type) AS plan_anaesthetist_2_type, count(*), ROW_NUMBER() OVER(PARTITION by anon_plan_anaesthetist_2_name ORDER BY COUNT(*) DESC) AS rnk
       FROM {PREOP_SCHEMA}."operation"
       WHERE anon_plan_anaesthetist_2_name IS NOT NULL
-      GROUP by anon_plan_anaesthetist_2_name, plan_anaesthetist_2_type
-      ORDER BY anon_plan_anaesthetist_2_name, count(*) DESC
+      GROUP by anon_plan_anaesthetist_2_name, LOWER(plan_anaesthetist_2_type)
+      ORDER BY anon_plan_anaesthetist_2_name, COUNT(*) DESC
     ) AS anaesthetist_2_table 
     WHERE anaesthetist_2_table.rnk = 1
   )
 
-  SELECT  ROW_NUMBER() OVER (ORDER BY specialty ASC) AS provider_id,
-          * 
+  SELECT  ROW_NUMBER() OVER (ORDER BY specialty ASC) AS provider_id, * 
   FROM
   (
     SELECT * FROM unique_surgeons
