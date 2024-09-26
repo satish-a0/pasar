@@ -37,7 +37,8 @@ class device_exposure:
     def process(self):
         # In batches
         omop_schema = os.getenv("POSTGRES_OMOP_SCHEMA")
-        source_schema = os.getenv("POSTGRES_SOURCE_SCHEMA")
+        postop_schema = os.getenv("POSTOP_SOURCE_SCHEMA")
+        preop_schema = os.getenv("PREOP_SOURCE_SCHEMA")
         omop_sqldev_schema = "omop_sqldev_schema"
 
         # Read from source
@@ -46,75 +47,137 @@ class device_exposure:
         # Transform
                 connection.execute(
                     text(f'''
+                        -- Create or replace the staging view for the visit_detail table
                         CREATE OR REPLACE VIEW {omop_schema}.stg__device_exposure AS
-                        SELECT distinct
-                            ROW_NUMBER() OVER (ORDER BY source_icu.id, endotracheal_tube_insertion_date, 
-                            tracheostomy_tube_insertion_date) 
-                            AS device_exposure_id, -- Autogenerate number
-                         
-                            cdm.person_id AS person_id,
-                            cdm.person_source_value AS person_source_value,
-                         
-                            -- Handle device_concept_id
-                            CASE
-                                WHEN source_icu.endotracheal_tube_insertion_date IS NOT NULL 
-                                THEN 4097216
-                                WHEN source_icu.tracheostomy_tube_insertion_date IS NOT NULL
-                                THEN 4044008
-                                ELSE 0
-                            END AS device_concept_id,
-                         
-                            -- Handle device_exposure_start_date
-                            COALESCE(source_icu.endotracheal_tube_insertion_date, source_icu.tracheostomy_tube_insertion_date) 
-                            AS device_exposure_start_date,
-                         
-                            -- Handle device_exposure_end_date
-                            COALESCE(source_icu.endotracheal_tube_removal_date, source_icu.tracheostomy_tube_removal_date) 
-                            AS device_exposure_end_date,
-                         
-                            -- Handle device_source_value based on which insertion date is used
-                            CASE
-                                WHEN source_icu.endotracheal_tube_insertion_date IS NOT NULL 
-                                THEN 'Endotracheal tube'
-                                WHEN source_icu.tracheostomy_tube_insertion_date IS NOT NULL
-                                THEN 'Tracheostomy tube'
-                                ELSE NULL
-                            END AS device_source_value,
-                         
-                            32879 AS device_type_concept_id, -- Registry concept id
-                            1 AS quantity,
-                            source_icu.session_id AS visit_occurrence_id
-                        FROM {source_schema}.icu AS source_icu
-                        JOIN {omop_sqldev_schema}.person AS cdm
-                            ON source_icu.anon_case_no=cdm.person_source_value
-                        WHERE
-                            source_icu.endotracheal_tube_insertion_date IS NOT NULL OR
-                            source_icu.tracheostomy_tube_insertion_date IS NOT NULL -- Filter rows where both insertion dates are NULL
-                        
-                        UNION ALL
+                            -- Extract relevant columns from the post_op.icu table
+                            WITH postop__icu AS (
+                                SELECT
+                                    id,
+                                    anon_case_no,
+                                    session_id,
+                                    -- Handle device_concept_id
+                                    CASE
+                                        WHEN icu.endotracheal_tube_insertion_date IS NOT NULL 
+                                        THEN 4097216
+                                        ELSE 4044008
+                                    END AS device_concept_id,
+                                    COALESCE(icu.endotracheal_tube_insertion_date, icu.tracheostomy_tube_insertion_date) AS start_date,
+                                    COALESCE(icu.endotracheal_tube_removal_date, icu.tracheostomy_tube_removal_date) AS end_date,
+                                    CASE
+                                        WHEN icu.endotracheal_tube_insertion_date IS NOT NULL 
+                                        THEN 'Endotracheal tube'
+                                        ELSE 'Tracheostomy tube'
+                                    END AS device_source_value,
+                                    ROW_NUMBER() OVER (
+                                        PARTITION BY anon_case_no, session_id, 
+                                        CASE
+                                            WHEN icu.endotracheal_tube_insertion_date IS NOT NULL 
+                                            THEN 4097216
+                                            ELSE 4044008
+                                        END,
+                                        COALESCE(icu.endotracheal_tube_insertion_date, icu.tracheostomy_tube_insertion_date),
+                                        COALESCE(icu.endotracheal_tube_removal_date, icu.tracheostomy_tube_removal_date),
+                                        CASE
+                                            WHEN icu.endotracheal_tube_insertion_date IS NOT NULL 
+                                            THEN 'Endotracheal tube'
+                                            ELSE 'Tracheostomy tube'
+                                        END
+                                        ORDER BY id
+                                    ) AS row_num
+                                FROM {postop_schema}.icu
+                                WHERE endotracheal_tube_insertion_date IS NOT NULL OR
+                                        tracheostomy_tube_insertion_date IS NOT NULL -- Filter rows where both insertion dates are NULL
+                            ),
+                            preop__riskindex AS (
+                                            SELECT DISTINCT
+                                                id, 
+                                                anon_case_no,
+                                                session_id,
+                                                2616666 AS device_concept_id,
+                                                session_startdate AS start_date,
+                                                CAST(NULL AS DATE) AS end_date,
+                                                'CPAP' AS device_source_value,
+                                                ROW_NUMBER() OVER (
+                                                    PARTITION BY anon_case_no, session_id, 2616666,
+                                                    session_startdate, CAST(NULL AS DATE),
+                                                    'CPAP'
+                                                    ORDER BY id
+                                                ) AS row_num
+                                            FROM {preop_schema}.riskindex
+                                            WHERE cpap_use LIKE 'Yes%'
+                            ),
+                            -- Ensure only distinct rows with corresponding id and DE_start_date
+                            filtered_combined AS (
+                                SELECT *
+                                FROM postop__icu
+                                WHERE row_num = 1
 
-                        SELECT DISTINCT
-                            ROW_NUMBER() OVER (ORDER BY s.id, session_startdate) + (SELECT DISTINCT COUNT(id)
-                                FROM {source_schema}.icu) AS device_exposure_id,
-                        
-                            cdm.person_id AS person_id,
-                            cdm.person_source_value AS person_source_value,
-                        
-                            2616666 AS device_concept_id,
-                        
-                            s.session_startdate AS device_exposure_start_date,
-                            CAST(NULL AS DATE) AS device_exposure_end_date,
-                        
-                            'CPAP' AS device_source_value,
-                        
-                            32879 AS device_type_concept_id, -- Registry concept id
-                            1 AS quantity,
-                            s.session_id AS visit_occurrence_id
-                        FROM preop.riskindex AS s
-                        JOIN {omop_sqldev_schema}.person AS cdm
-                            ON s.anon_case_no = cdm.person_source_value
-                        WHERE
-                            s.cpap_use LIKE 'Yes%'
+                                UNION ALL
+
+                                SELECT *
+                                FROM preop__riskindex
+                                WHERE row_num = 1
+                            ),
+                            -- Finalized the staging table
+                            final AS (
+                                SELECT 
+                                    com.id AS id,
+                                    com.anon_case_no AS anon_case_no,
+                                    com.session_id AS session_id,
+                                    com.device_concept_id as device_concept_id,
+                                    com.start_date AS device_exposure_start_date,
+                                    com.end_date AS device_exposure_end_date,
+                                    com.device_source_value AS device_source_value
+                                FROM filtered_combined AS com
+                            )
+
+                            SELECT
+                                id,                         
+                                anon_case_no,    
+                                device_concept_id,                      
+                                device_exposure_start_date,
+                                device_exposure_end_date,
+                                device_source_value,        
+                                session_id                      
+                            FROM final;
+                        '''
+                     ))
+
+                connection.execute(
+                    text(f'''
+                        -- Create intermediate view
+                        CREATE OR REPLACE VIEW {omop_schema}.int__device_exposure AS
+                            -- Convert visit_occurrence_id back to session_id
+                            WITH session__id AS (
+                                SELECT CAST(LEFT(CAST(visit_occurrence_id AS TEXT), LENGTH(CAST(visit_occurrence_id AS TEXT)) - 2) AS INTEGER) AS session_id, *
+                                FROM {omop_sqldev_schema}.visit_occurrence
+                            ),
+                            -- Combine with other dimension tables
+                            final AS (
+                                SELECT
+                                    p.person_id AS person_id,
+                                    stg__de.device_concept_id AS device_concept_id,
+                                    stg__de.device_exposure_start_date AS device_exposure_start_date,
+                                    stg__de.device_exposure_end_date AS device_exposure_end_date,
+                                    stg__de.device_source_value AS device_source_value,
+                                    v.visit_occurrence_id AS visit_occurrence_id,
+                                    stg__de.id AS id
+                                FROM {omop_schema}.stg__device_exposure AS stg__de
+                                LEFT JOIN {omop_schema}.person AS p
+                                    ON stg__de.anon_case_no = p.person_source_value
+                                LEFT JOIN session__id AS v
+                                    ON stg__de.session_id = v.session_id
+                            )
+
+                            SELECT
+                                person_id,
+                                device_concept_id,
+                                device_exposure_start_date,
+                                device_exposure_end_date,
+                                device_source_value,
+                                visit_occurrence_id,
+                                id          
+                            FROM final;
                         '''
                      ))
 
