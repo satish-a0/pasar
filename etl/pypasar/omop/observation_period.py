@@ -35,7 +35,7 @@ class observation_period:
     def process(self):
         # List of SQL file paths
         sql_files = [
-            os.path.join(os.getenv("BASE_PATH"), "observation_period/stg__obsercation_period.sql"),
+            os.path.join(os.getenv("BASE_PATH"), "observation_period/stg__observation_period.sql"),
             os.path.join(os.getenv("BASE_PATH"), "observation_period/observation_period.sql")
         ]
         self.execute_sql_files(sql_files)
