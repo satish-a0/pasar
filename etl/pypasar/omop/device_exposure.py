@@ -182,51 +182,52 @@ class device_exposure:
                      ))
 
                 # Ingest from stg__device_exposure into OMOP device_exposure Table
-                # connection.execute(
-                #     text(f'''
-                #         INSERT INTO {omop_schema}.device_exposure (
-                #             device_exposure_id,
-                #             person_id,
-                #             device_concept_id,
-                #             device_exposure_start_date,
-                #             device_exposure_start_datetime,
-                #             device_exposure_end_date,
-                #             device_exposure_end_datetime,
-                #             device_type_concept_id,
-                #             unique_device_id,
-                #             production_id,
-                #             quantity,
-                #             provider_id,
-                #             visit_occurrence_id,
-                #             visit_detail_id,
-                #             device_source_value,
-                #             device_source_concept_id,
-                #             unit_concept_id,
-                #             unit_source_value,
-                #             unit_source_concept_id
-                #         )
-                #         SELECT
-                #             device_exposure_id,
-                #             person_id,
-                #             device_concept_id,
-                #             device_exposure_start_date,
-                #             NULL AS device_exposure_start_datetime,
-                #             device_exposure_end_date,
-                #             NULL AS device_exposure_end_datetime,
-                #             device_type_concept_id,
-                #             NULL AS unique_device_id,
-                #             NULL AS production_id,
-                #             quantity,
-                #             provider_id,
-                #             visit_occurrence_id,
-                #             NULL AS visit_detail_id,
-                #             device_source_value,
-                #             NULL AS device_source_concept_id,
-                #             NULL AS unit_concept_id,
-                #             NULL AS unit_source_value,
-                #             NULL AS unit_source_concept_id
-                #         FROM {omop_schema}.stg__device_exposure'''
-                #      ))
+                connection.execute(
+                    text(f'''
+                        INSERT INTO {omop_schema}.device_exposure (
+                            device_exposure_id,
+                            person_id,
+                            device_concept_id,
+                            device_exposure_start_date,
+                            device_exposure_start_datetime,
+                            device_exposure_end_date,
+                            device_exposure_end_datetime,
+                            device_type_concept_id,
+                            unique_device_id,
+                            production_id,
+                            quantity,
+                            provider_id,
+                            visit_occurrence_id,
+                            visit_detail_id,
+                            device_source_value,
+                            device_source_concept_id,
+                            unit_concept_id,
+                            unit_source_value,
+                            unit_source_concept_id
+                        )
+                        SELECT
+                            -- Autogenerate unique device_exposure_id based on device_exposure_start_date and id
+                            ROW_NUMBER() OVER (ORDER BY device_exposure_start_date, id) AS device_exposure_id,
+                            person_id,
+                            device_concept_id,
+                            device_exposure_start_date,
+                            NULL AS device_exposure_start_datetime,
+                            device_exposure_end_date,
+                            NULL AS device_exposure_end_datetime,
+                            32879 AS device_type_concept_id, -- Registry concept id
+                            NULL AS unique_device_id,
+                            NULL AS production_id,
+                            NULL AS quantity,
+                            NULL AS provider_id,
+                            visit_occurrence_id,
+                            NULL AS visit_detail_id,
+                            device_source_value,
+                            NULL AS device_source_concept_id,
+                            NULL AS unit_concept_id,
+                            NULL AS unit_source_value,
+                            NULL AS unit_source_concept_id
+                        FROM {omop_schema}.int__device_exposure'''
+                     ))
 
     def finalize(self):
         # Verify if needed
