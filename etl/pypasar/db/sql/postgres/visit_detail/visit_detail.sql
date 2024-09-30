@@ -38,7 +38,7 @@ SELECT
     visit_detail_start_datetime,
     visit_detail_end_date,
     visit_detail_end_datetime,
-    32879 ASvisit_detail_type_concept_id, 
+    32879 AS visit_detail_type_concept_id, 
     provider_id,
     care_site_id,
     'ICU'::text AS visit_detail_source_value,
