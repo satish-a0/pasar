@@ -19,6 +19,8 @@ CREATE OR REPLACE VIEW {OMOP_SCHEMA}.stg__specimen AS
             anon_case_no,
             micro_resulted_procedure_description	
         FROM {POSTOP_SCHEMA}.labmicro
+        -- Ensure that the required field specimen_collection_date is not NULL
+        WHERE specimen_collection_date IS NOT NULL
     ),
     -- Join postop__labmicro with person for person_id
     joining AS (
