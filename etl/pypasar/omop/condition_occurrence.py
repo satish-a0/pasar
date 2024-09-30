@@ -74,8 +74,8 @@ class condition_occurrence:
         if len(source_batch) > 0:
             condition_occ_df['condition_start_date'] = pd.to_datetime(source_batch['diagnosis_date']).dt.date
             condition_occ_df['condition_start_datetime'] = source_batch['diagnosis_date']
-            condition_occ_df['condition_end_date'] = pd.to_datetime(source_batch['diagnosis_date']).dt.date
-            condition_occ_df['condition_end_datetime'] = source_batch['diagnosis_date']
+            condition_occ_df['condition_end_date'] = None
+            condition_occ_df['condition_end_datetime'] = None
             condition_occ_df['condition_type_concept_id'] = 32879
             condition_occ_df['condition_status_concept_id'] = 32896
             condition_occ_df['condition_concept_id'] = 0 # TODO: Update
