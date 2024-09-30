@@ -8,7 +8,7 @@
 -- 2024-09-30  1.00           Initial create
 -- *******************************************************************
 
--- Create the staging view for the person table, assigning a unique person_id
+-- Create the staging view for the care_site table
 CREATE OR REPLACE VIEW {OMOP_SCHEMA}.stg__care_site AS 
     -- Extract relevant columns from the intra_op.operation table
     -- This CTE retrieves distinct values for care site and place of service information
