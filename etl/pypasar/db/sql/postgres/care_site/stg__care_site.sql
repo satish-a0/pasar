@@ -29,7 +29,7 @@ CREATE OR REPLACE VIEW {OMOP_SCHEMA}.stg__care_site AS
     postop__discharge AS (
         SELECT DISTINCT
             external_hospital_name AS care_site_name,
-            external_hospital_code AS place_of_service_source_value,
+            NULL AS place_of_service_source_value,
             external_hospital_code AS care_site_source_value
         FROM {POSTOP_SCHEMA}.discharge
     ),
