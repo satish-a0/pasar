@@ -9,9 +9,9 @@
 | 2 | person_id | anon_case_no | Join with person.person_source_value for the `person_id` | |
 | 3 | visit_detail_concept_id | <i style="color:gray;">NULL</i> | Intensive Care -> 32037 | |
 | 4 | visit_detail_start_date | icu_admission_date | | **Contains NULL values; consider dropping it |
-| 5 | visit_detail_start_datetime | icu_admission_time | Concatenate date and time fields | |
+| 5 | visit_detail_start_datetime | icu_admission_time | Concatenate date and time fields | Set default time to 00:00:00 |
 | 6 | visit_detail_end_date | icu_discharge_date | | **Contains NULL values; consider dropping it. |
-| 7 | visit_detail_end_datetime | icu_discharge_time | Concatenate date and time fields | |
+| 7 | visit_detail_end_datetime | icu_discharge_time | Concatenate date and time fields | Set default time to 00:00:00 |
 | 8 | visit_detail_type_concept_id | <i style="color:gray;">NULL</i> | Registry -> 32879 | |
 | 9 | provider_id | | |
 | 10 | care_site_id | icu_location | Join with care_site.care_site_source_value for the `care_site_id` | |
