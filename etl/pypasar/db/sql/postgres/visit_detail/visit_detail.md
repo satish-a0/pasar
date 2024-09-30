@@ -1,5 +1,6 @@
 # Table name: Visit Detail
 
+### Reading from post_op__icu
 ![image9](https://github.com/user-attachments/assets/69a0ff34-dd68-4282-bdac-3ac6130a57c6)
 
 | | Destination field | Source field | Logic | Comment field |
@@ -25,6 +26,7 @@
 
 <br><br>
 
+### Reading from intra_op__operation
 ![image10](https://github.com/user-attachments/assets/5cdfa2f3-f28d-4431-abd3-1d6aa6f472c8)
 
 | | Destination field | Source field | Logic | Comment field |
