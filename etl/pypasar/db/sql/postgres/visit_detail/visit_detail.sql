@@ -6,6 +6,7 @@
 -- DATE        VERS  INITIAL  CHANGE DESCRIPTION
 -- ------ ----  ----  -------  ----------------------------------------
 -- 2024-09-24  1.00            Initial create
+-- 2024-10-01  2.00            Set provider ID to NULL
 -- *******************************************************************
 
 INSERT INTO {OMOP_SCHEMA}.visit_detail (
@@ -39,7 +40,7 @@ SELECT
     visit_detail_end_date,
     visit_detail_end_datetime,
     32879 AS visit_detail_type_concept_id, 
-    provider_id,
+    NULL AS provider_id,
     care_site_id,
     'ICU'::text AS visit_detail_source_value,
     NULL AS visit_detail_source_concept_id,
