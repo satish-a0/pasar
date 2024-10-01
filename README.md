@@ -18,7 +18,12 @@
 
 ## Vocabulary Mapping
 
+- Tracking uploads: https://github.com/satish-a0/pasar/pull/21
+
 ## ETL
+
+- Working Sheet: https://ohdsiorg.sharepoint.com/:x:/s/OHDSIAPAC/ERctK2EQDGlDg4yh79imNpkBfMY4Rg7IhA0lKfYmCpz1tg?e=fPzMTS&nav=MTVfe0VGMUNGNjA1LUZDNDgtNDMzNy05RDg4LTJGMTBCRTIxRDkyQn0
+- Timelines: https://ohdsiorg.sharepoint.com/:x:/s/OHDSIAPAC/EctGt_SfFWlErKJWLO3xXp4Bsnh4tYu5sVFl2de1TOHq2w?e=ICTq4g&nav=MTVfezExMDFDNDc5LUNCNzEtNDA1MC1BOTkzLTc1NDgxQTFBNzlFNH0
 
 ### Pre-requisites
 - bash
