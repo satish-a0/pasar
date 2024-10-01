@@ -60,4 +60,5 @@ CREATE OR REPLACE VIEW {OMOP_SCHEMA}.stg__provider AS
     RIGHT JOIN unique_anaesthetists_2 AS anaesthetists_2
     ON anaesthetists_1.name = anaesthetists_2.name AND anaesthetists_1.name is NULL
   ) AS final
+  GROUP BY name, specialty    -- Ensure distinct rows by grouping by name and specialty
   ORDER BY specialty ASC;
