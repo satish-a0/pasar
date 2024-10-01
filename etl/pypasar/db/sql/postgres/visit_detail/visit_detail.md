@@ -13,34 +13,8 @@
 | 6 | visit_detail_end_date | icu_discharge_date | | **Contains NULL values; consider dropping it. |
 | 7 | visit_detail_end_datetime | icu_discharge_time | Concatenate date and time fields | Set default time to 00:00:00 |
 | 8 | visit_detail_type_concept_id | <i style="color:gray;">NULL</i> | Registry -> 32879 | |
-| 9 | provider_id | | |
+| 9 | provider_id | <i style="color:gray;">NULL</i> | <i style="color:gray;">NULL</i> |
 | 10 | care_site_id | icu_location | Join with care_site.care_site_source_value for the `care_site_id` | |
-| 11 | visit_detail_source_value | <i style="color:gray;">NULL</i> | ICU | |
-| 12 | admitted_from_concept_id | <i style="color:gray;">NULL</i> | <i style="color:gray;">NULL</i> |
-| 13 | admitted_from_source_value | <i style="color:gray;">NULL</i> | <i style="color:gray;">NULL</i> |
-| 14 | discharged_to_source_value | <i style="color:gray;">NULL</i> | <i style="color:gray;">NULL</i> |
-| 15 | discharged_to_concept_id | <i style="color:gray;">NULL</i> | <i style="color:gray;">NULL</i> |
-| 16 | preceding_visit_detail_id | <i style="color:gray;">NULL</i> | <i style="color:gray;">NULL</i> |
-| 17 | parent_visit_detail_id | <i style="color:gray;">NULL</i> | <i style="color:gray;">NULL</i> |
-| 18 | visit_occurrence_id | session_id | Join with visit_occurrence.session_id  for the `visit_occurrence_id`. <br> To map `visit_occurrence_id` back to the original `session_id`, use this code: <br><br> CAST(LEFT(CAST(visit_occurrence_id AS TEXT), LENGTH(CAST(visit_occurrence_id AS TEXT)) - 2) AS INTEGER) AS session_id | |
-
-<br><br>
-
-### Reading from intra_op__operation
-![image10](https://github.com/user-attachments/assets/5cdfa2f3-f28d-4431-abd3-1d6aa6f472c8)
-
-| | Destination field | Source field | Logic | Comment field |
-| --- | --- | --- | --- | --- |
-| 1 | visit_detail_id | | |
-| 2 | person_id | anon_case_no | Join with person.person_source_value for the `person_id` | |
-| 3 | visit_detail_concept_id | | Intensive Care -> 32037 | |
-| 4 | visit_detail_start_date | | | |
-| 5 | visit_detail_start_datetime | | | |
-| 6 | visit_detail_end_date | | | |
-| 7 | visit_detail_end_datetime | | | |
-| 8 | visit_detail_type_concept_id | <i style="color:gray;">NULL</i> | Registry -> 32879 | |
-| 9 | provider_id | anon_surgeon_name | Join with provider.session_id for the `provider_id` | |
-| 10 | care_site_id | | |
 | 11 | visit_detail_source_value | <i style="color:gray;">NULL</i> | ICU | |
 | 12 | admitted_from_concept_id | <i style="color:gray;">NULL</i> | <i style="color:gray;">NULL</i> |
 | 13 | admitted_from_source_value | <i style="color:gray;">NULL</i> | <i style="color:gray;">NULL</i> |
