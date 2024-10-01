@@ -6,7 +6,6 @@ from ..db.utils.postgres import postgres
 # Load environment variables from the .env file
 load_dotenv()
 
-
 class note:
 
     def __init__(self):
@@ -46,68 +45,95 @@ class note:
                 connection.execute(
                     text(f'''
                         CREATE OR REPLACE VIEW {omop_schema}.stg__note AS
-                        SELECT DISTINCT
-                            ROW_NUMBER() OVER (ORDER BY source_CliDc.postop_clindoc_created_datetime, id) AS note_id,
-                            CDM_PER.person_id AS person_id,
-                            CAST(source_CliDc.postop_clindoc_created_datetime AS date) AS note_date,
-                            CAST(source_CliDc.postop_clindoc_created_datetime AS Time) AS note_datetime,
-                            0 AS note_class_concept_id,
-                            source_CliDc.postop_clindoc_item_name AS note_title,
-                            source_CliDc.postop_clindoc_value_text AS note_text,
-                            0 AS provider_id,
-                            source_CliDc.session_id AS visit_occurrence_id,
-                            0 AS visit_detail_id,
-                            source_CliDc.postop_clindoc_item_description AS note_source_value,
-                            0 AS note_event_id,
-                            0 AS note_event_source_concept_id
-                        FROM postop.clindoc AS source_CliDc
-                        JOIN {omop_schema}.person AS CDM_PER
-                            ON source_CliDc.anon_case_no=CDM_PER.person_source_value
+                            WITH postop__clindoc AS (
+                                SELECT
+                                    id,
+                                    anon_case_no,
+                                    session_id,
+                                    postop_clindoc_created_datetime,
+                                    postop_clindoc_item_name,
+                                    postop_clindoc_item_description,
+                                    postop_clindoc_value_text,
+                                    ROW_NUMBER() OVER (
+                                        PARTITION BY anon_case_no, session_id, postop_clindoc_created_datetime, postop_clindoc_item_description
+                                        ORDER BY id
+                                    ) AS row_num      --Any rows that are duplicate with show 1,2,...
+                                FROM postop.clindoc
+                            ),
+
+                            -- Filter the table to only include unique value
+                            filtered AS (
+                                SELECT * from postop__clindoc WHERE ROW_NUM = 1
+                            )
+
+                            SELECT
+                                ROW_NUMBER() OVER (ORDER BY clindoc.postop_clindoc_created_datetime, id) AS note_id,
+                                CDM_PER.person_id AS person_id,
+                                CAST(clindoc.postop_clindoc_created_datetime AS date) AS note_date, -- get date only
+                                clindoc.postop_clindoc_created_datetime AS note_datetime,
+                                clindoc.postop_clindoc_item_name AS note_title,
+
+                            -- Handle any null values in note text
+                            CASE
+                                WHEN clindoc.postop_clindoc_value_text IS NOT NULL 
+                                THEN clindoc.postop_clindoc_value_text
+                                ELSE '0'
+                            END AS note_text,
+
+                                CDM_VisitOcc.visit_occurrence_id AS visit_occurrence_id,
+                                CDM_VisitDet.visit_detail_id AS visit_detail_id,
+                                clindoc.postop_clindoc_item_description AS note_source_value
+                            FROM filtered AS clindoc
+                            -- Join tables needed for person_id, visit_occurrence_id, visit_detail_id
+                            JOIN {omop_schema}.person AS CDM_PER
+                                ON clindoc.anon_case_no=CDM_PER.person_source_value
+                            JOIN omop_sqldev_schema.visit_occurrence AS CDM_VisitOcc
+                                ON CDM_PER.person_id=CDM_VisitOcc.person_id
+                            JOIN omop_sqldev_schema.visit_detail AS CDM_VisitDet
+                                ON CDM_VisitOcc.visit_occurrence_id=CDM_VisitDet.visit_occurrence_id
                         '''
                      ))
 
-                # Note: will join other CDM tables once populated with data
-                # No inserting data into the actual CDM table as stg_note has incomplete data
                 # Read from stg__note and insert into CDM table note
-                # """ connection.execute(
-                #     text(f'''
-                #         INSERT INTO {omop_schema}.note (
-                #             note_id,
-                #             person_id,
-                #             note_date,
-                #             note_datetime,
-                #             38279 AS note_type_concept_id,
-                #             note_class_concept_id,
-                #             note_title,
-                #             note_text,
-                #             32678 AS encoding_concept_id,
-                #             4180186 AS language_concept_id,
-                #             provider_id,
-                #             visit_occurrence_id,
-                #             visit_detail_id,
-                #             note_source_value,
-                #             note_event_id,
-                #             note_event_field_concept_id
-                #         )
-                #         SELECT
-                #             note_id,
-                #             person_id,
-                #             note_date,
-                #             note_datetime,
-                #             note_type_concept_id,
-                #             note_class_concept_id,
-                #             note_title,
-                #             note_text,
-                #             encoding_concept_id,
-                #             language_concept_id,
-                #             provider_id,
-                #             visit_occurrence_id,
-                #             visit_detail_id,
-                #             note_source_value,
-                #             note_event_id,
-                #             note_event_field_concept_id
-                #         FROM {omop_schema}.stg__note'''
-                #      )) """
+                connection.execute(
+                    text(f'''
+                        INSERT INTO {omop_schema}.note (
+                            note_id,
+                            person_id,
+                            note_date,
+                            note_datetime,
+                            note_type_concept_id,
+                            note_class_concept_id,
+                            note_title,
+                            note_text,
+                            encoding_concept_id,
+                            language_concept_id,
+                            provider_id,
+                            visit_occurrence_id,
+                            visit_detail_id,
+                            note_source_value,
+                            note_event_id,
+                            note_event_field_concept_id
+                        )
+                        SELECT
+                            note_id,
+                            person_id,
+                            note_date,
+                            note_datetime,
+                            32879 AS note_type_concept_id,
+                            0 AS note_class_concept_id,  -- Put 0 temporary as source_to_concept not included
+                            note_title,
+                            note_text, -- all value text is NULL
+                            32678 AS encoding_concept_id, -- clarification states data stored in database is UTF-8
+                            4180186 AS language_concept_id,
+                            NULL AS provider_id,
+                            visit_occurrence_id,
+                            visit_detail_id,
+                            note_source_value,
+                            NULL AS note_event_id,
+                            NULL AS note_event_field_concept_id
+                        FROM {omop_schema}.stg__note'''
+                     ))
 
     def finalize(self):
         self.engine.dispose()
