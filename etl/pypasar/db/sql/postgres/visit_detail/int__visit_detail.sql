@@ -6,6 +6,7 @@
 -- DATE        VERS  INITIAL  CHANGE DESCRIPTION
 -- ----------  ----  -------  ----------------------------------------
 -- 2024-09-18  1.00           Initial create
+-- 2024-10-01  2.00           Remove the mapping with the provider table
 -- *******************************************************************
 
 -- Create the intermediate view for the visit_detail table
@@ -23,7 +24,6 @@ CREATE OR REPLACE VIEW {OMOP_SCHEMA}.int__visit_detail AS
             stg__vd.visit_detail_start_datetime AS visit_detail_start_datetime,
             stg__vd.visit_detail_end_date AS visit_detail_end_date,
             stg__vd.visit_detail_end_datetime AS visit_detail_end_datetime,
-            pr.provider_id AS provider_id,
             cs.care_site_id AS care_site_id,
             vo.visit_occurrence_id AS visit_occurrence_id,
             stg__vd.id AS id,
@@ -32,9 +32,6 @@ CREATE OR REPLACE VIEW {OMOP_SCHEMA}.int__visit_detail AS
         -- Join with the Person table
         LEFT JOIN {OMOP_SCHEMA}.person AS p
             ON stg__vd.anon_case_no = p.person_source_value
-        -- Join with the Provider table
-        LEFT JOIN {OMOP_SCHEMA}.provider AS pr
-            ON stg__vd.anon_surgeon_name = pr.provider_source_value
         -- Join with the Care_site table
         LEFT JOIN {OMOP_SCHEMA}.care_site AS cs
             ON stg__vd.icu_location = cs.care_site_source_value
@@ -49,7 +46,6 @@ CREATE OR REPLACE VIEW {OMOP_SCHEMA}.int__visit_detail AS
         visit_detail_start_datetime,
         visit_detail_end_date,
         visit_detail_end_datetime,
-        provider_id,
         care_site_id,
         visit_occurrence_id,
         id,                             -- For generating IDs         
