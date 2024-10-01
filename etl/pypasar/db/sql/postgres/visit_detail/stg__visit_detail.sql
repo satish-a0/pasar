@@ -6,6 +6,7 @@
 -- DATE        VERS  INITIAL  CHANGE DESCRIPTION
 -- ----------  ----  -------  ----------------------------------------
 -- 2024-09-18  1.00           Initial create
+-- 2024-10-01  2.00           Ignore the intra_op.operation table
 -- *******************************************************************
 
 -- Create or replace the staging view for the visit_detail table
@@ -36,15 +37,7 @@ CREATE OR REPLACE VIEW {OMOP_SCHEMA}.stg__visit_detail AS
         FROM postop__icu
         WHERE row_num = 1
     ),
-    -- Extract distinct relevant columns from the intra_op.operation table
-    intraop__operation AS (
-        SELECT DISTINCT 
-            session_id, 
-            anon_case_no, 
-            anon_surgeon_name
-        FROM {INTRAOP_SCHEMA}.operation
-    ),
-    -- Combine the filtered_postop__icu and intraop__operation
+    -- Retrieve ICU visit details; combine date and time
     final AS (
         SELECT 
             icu.id AS id,
@@ -55,12 +48,8 @@ CREATE OR REPLACE VIEW {OMOP_SCHEMA}.stg__visit_detail AS
             (CONCAT(icu.icu_admission_date, ' ', COALESCE(icu.icu_admission_time::text, '00:00:00')))::timestamp AS visit_detail_start_datetime,
             icu.icu_discharge_date AS visit_detail_end_date,
             (CONCAT(icu.icu_discharge_date, ' ', COALESCE(icu.icu_discharge_time::text, '00:00:00')))::timestamp AS visit_detail_end_datetime,
-            icu.icu_location AS icu_location,
-            op.anon_surgeon_name AS anon_surgeon_name
+            icu.icu_location AS icu_location
         FROM filtered_postop__icu AS icu
-        LEFT JOIN intraop__operation AS op
-            ON icu.anon_case_no = op.anon_case_no
-            AND icu.session_id = op.session_id
     )
 
     SELECT
@@ -72,6 +61,5 @@ CREATE OR REPLACE VIEW {OMOP_SCHEMA}.stg__visit_detail AS
         visit_detail_end_date,
         visit_detail_end_datetime,
         icu_location,                   -- For mapping with the care_site_id field
-        anon_surgeon_name,              -- For mapping with the provider_id field
         session_id                      -- For mapping with the visit_occurrence_id field
     FROM final;
