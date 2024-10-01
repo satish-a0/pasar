@@ -32,7 +32,7 @@ class death:
                 result = connection.execute(
                     text(f'''SELECT (
                         case when count(distinct(anon_case_no, death_date))=count(distinct(anon_case_no)) then 'Unique' else 'Duplicate' end)
-                        FROM {os.getenv("POSTOP_SOURCE_SCHEMA")}.info WHERE death_date IS NOT NULL'''
+                        FROM {os.getenv("POSTGRES_SOURCE_POSTOP_SCHEMA")}.info WHERE death_date IS NOT NULL'''
                     )).mappings().all()[0]
                 if result['case'] != 'Unique':
                     raise ValueError(f'There is duplicate in death_date.')
@@ -43,7 +43,7 @@ class death:
     def process(self):
         # Set SCHEMA
         omop_schema = os.getenv("POSTGRES_OMOP_SCHEMA")
-        source_schema = os.getenv("POSTOP_SOURCE_SCHEMA")
+        source_schema = os.getenv("POSTGRES_SOURCE_POSTOP_SCHEMA")
 
         with self.engine.connect() as connection:
             with connection.begin():
