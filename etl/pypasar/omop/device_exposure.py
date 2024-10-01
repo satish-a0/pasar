@@ -37,8 +37,8 @@ class device_exposure:
     def process(self):
         # In batches
         omop_schema = os.getenv("POSTGRES_OMOP_SCHEMA")
-        postop_schema = os.getenv("POSTOP_SOURCE_SCHEMA")
-        preop_schema = os.getenv("PREOP_SOURCE_SCHEMA")
+        postop_schema = os.getenv("POSTGRES_SOURCE_POSTOP_SCHEMA")
+        preop_schema = os.getenv("POSTGRES_SOURCE_PREOP_SCHEMA")
         omop_sqldev_schema = "omop_sqldev_schema"
 
         # Read from source
