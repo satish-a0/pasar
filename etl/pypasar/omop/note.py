@@ -64,6 +64,12 @@ class note:
                             -- Filter the table to only include unique value
                             filtered AS (
                                 SELECT * from postop__clindoc WHERE ROW_NUM = 1
+                            ),
+
+                            -- revert visit occurrence id to session id
+                            sessionIDs AS (
+                                SELECT CAST(LEFT(CAST(visit_occurrence_id AS TEXT), LENGTH(CAST(visit_occurrence_id AS TEXT)) - 2) AS INTEGER) AS session_id, *
+                                    FROM omop_sqldev_schema.visit_occurrence
                             )
 
                             SELECT
@@ -81,16 +87,13 @@ class note:
                             END AS note_text,
 
                                 CDM_VisitOcc.visit_occurrence_id AS visit_occurrence_id,
-                                CDM_VisitDet.visit_detail_id AS visit_detail_id,
                                 clindoc.postop_clindoc_item_description AS note_source_value
                             FROM filtered AS clindoc
                             -- Join tables needed for person_id, visit_occurrence_id, visit_detail_id
                             JOIN {omop_schema}.person AS CDM_PER
                                 ON clindoc.anon_case_no=CDM_PER.person_source_value
-                            JOIN omop_sqldev_schema.visit_occurrence AS CDM_VisitOcc
-                                ON CDM_PER.person_id=CDM_VisitOcc.person_id
-                            JOIN omop_sqldev_schema.visit_detail AS CDM_VisitDet
-                                ON CDM_VisitOcc.visit_occurrence_id=CDM_VisitDet.visit_occurrence_id
+                            JOIN sessionIDs AS CDM_VisitOcc
+                                ON clindoc.session_id=CDM_VisitOcc.session_id
                         '''
                      ))
 
@@ -128,7 +131,7 @@ class note:
                             4180186 AS language_concept_id,
                             NULL AS provider_id,
                             visit_occurrence_id,
-                            visit_detail_id,
+                            NULL AS visit_detail_id, -- Set as NULL based on suggestion in GitHub
                             note_source_value,
                             NULL AS note_event_id,
                             NULL AS note_event_field_concept_id
