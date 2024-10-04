@@ -1,6 +1,6 @@
 import pandas as pd
 
-from .config import SOURCE_TABLE_COL_NAME, ObservationMappingConfig
+from .config import SOURCE_TABLE_COL_NAME, ObservationMappingConfig, CHUNK_SIZE
 from .util import mapping_wrapper
 
 
@@ -22,15 +22,14 @@ class ObservationMapping():
         return df[[observation_mapping["omop"]]]
 
     @mapping_wrapper
-    def map_observation_id(self, df: pd.DataFrame) -> pd.DataFrame:
+    def map_observation_id(self, df: pd.DataFrame, rowsMapped: int) -> pd.DataFrame:
         observation_id_mapping = ObservationMappingConfig.observation_id_mapping
         # Sort and reset index to set dataframe index as running index
         df = df.sort_values(observation_id_mapping["pasar"], ascending=[
                             False, False]).reset_index(drop=True)
-        
 
         # Add one to index so that id starts from 1 instead of 0
-        df.index += 1 
+        df.index += 1 + rowsMapped
         # reset_index again to get id as a column
         df = df.reset_index(names=observation_id_mapping["omop"])
 
@@ -118,3 +117,84 @@ class ObservationMapping():
            ] = df[value_as_concept_id_mapping["omop"]].astype(pd.Int64Dtype())
 
         return df[[value_as_concept_id_mapping["omop"]]]
+
+    @mapping_wrapper
+    def map_eav(self, df: pd.DataFrame, source_table: str) -> pd.DataFrame:
+        '''Maps
+        observation_concept_id
+        observation_source_value
+        value_source_value
+        value_as_number
+        value_as_string
+        '''
+
+        # TODO: add observation_concept_id mapping
+        value_as_string_mapping = ObservationMappingConfig.value_as_string_mapping
+        observation_source_value_mapping = ObservationMappingConfig.observation_source_value_mapping
+        value_source_value_mapping = ObservationMappingConfig.value_source_value_mapping
+        value_as_number_mapping = ObservationMappingConfig.value_as_number_mapping
+
+        mapped_df = pd.DataFrame()
+        vas_table_mapping = value_as_string_mapping["pasar"].get(
+            source_table, [])
+        osb_table_mapping = observation_source_value_mapping["pasar"].get(
+            source_table, [])
+        vsv_table_mapping = value_source_value_mapping["pasar"].get(
+            source_table, [])
+        van_table_mapping = value_as_number_mapping["pasar"].get(
+            source_table, [])
+
+        # Get list of all possible EAV columns
+        eav_columns = list(set(
+            vas_table_mapping + osb_table_mapping + vsv_table_mapping + van_table_mapping))
+
+        for eav_column in eav_columns:
+            temp_df = df.copy()
+
+            # TODO: add observation_concept_id mapping logic
+            temp_df["observation_concept_id"] = 1
+
+            # map value_as_string
+            if eav_column in vas_table_mapping:
+                temp_df[value_as_string_mapping["omop"]
+                        ] = df[eav_column].astype(str)
+            else:
+                temp_df[value_as_string_mapping["omop"]] = None
+
+            # TODO: To confirm if mapping to eav_column name
+            # map observation_source_value
+            if eav_column in osb_table_mapping:
+                temp_df[observation_source_value_mapping["omop"]
+                        ] = eav_column
+
+                # TODO: TO REMOVE: TEMPOARILY ADD SO THAT INGESTION CAN WORK DUE TO VARCHAR(50) CONSTRAINT
+                temp_df[observation_source_value_mapping["omop"]
+                        ] = temp_df[observation_source_value_mapping["omop"]].str.slice(0, 50)
+            else:
+                temp_df[observation_source_value_mapping["omop"]] = None
+
+            # TODO: To confirm if mapping to eav_column name
+            # map value_source_value
+            if eav_column in vsv_table_mapping:
+                temp_df[value_source_value_mapping["omop"]
+                        ] = df[eav_column].astype(str)
+
+                # TODO: TO REMOVE: TEMPOARILY ADD SO THAT INGESTION CAN WORK DUE TO VARCHAR(50) CONSTRAINT
+                temp_df[value_source_value_mapping["omop"]
+                        ] = temp_df[value_source_value_mapping["omop"]].str.slice(0, 50)
+            else:
+                temp_df[value_source_value_mapping["omop"]] = None
+
+            # map value_as_number
+            if eav_column in van_table_mapping:
+                temp_df[value_as_number_mapping["omop"]] = df[eav_column]
+            else:
+                temp_df[value_as_number_mapping["omop"]] = None
+
+            # Remove eav_column from dataframe
+            # temp_df = temp_df.drop(labels=[eav_column], axis=1)
+            # df = df.drop(labels=[eav_column], axis=1)
+
+            mapped_df = pd.concat([mapped_df, temp_df], ignore_index=True)
+
+        return mapped_df
