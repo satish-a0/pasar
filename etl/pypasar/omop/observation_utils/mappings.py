@@ -27,18 +27,12 @@ class ObservationMapping():
         # Sort and reset index to set dataframe index as running index
         df = df.sort_values(observation_id_mapping["pasar"], ascending=[
                             False, False]).reset_index(drop=True)
+        
 
+        # Add one to index so that id starts from 1 instead of 0
+        df.index += 1 
         # reset_index again to get id as a column
         df = df.reset_index(names=observation_id_mapping["omop"])
-
-        # TODO: Seems to have duplicates with observation_id_mapping composite, e.g [id, session_startdate] composite is not unique
-        # Sanity check for unique observation_id_mapping composite
-        # test_df = df[observation_id_mapping["pasar"]
-        #              ].value_counts().reset_index(name='count')
-        # print(test_df)
-        # test = df.loc[(df["id"] == 4552) & (
-        #     df["session_startdate"].astype('str') == "2013-03-07")]
-        # print(test[["id", "session_startdate", "source_table"]])
 
         return df[[observation_id_mapping["omop"]]]
 
