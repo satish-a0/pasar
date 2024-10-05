@@ -92,34 +92,47 @@ class condition_occurrence:
         with self.engine.connect() as connection:
             with connection.begin():
                 connection.execute(text(f'SET search_path TO {self.omop_schema}'))
-                connection.execute(text(f'''INSERT INTO condition_occurrence (condition_occurrence_id, 
-                                             person_id, 
-                                             condition_concept_id, 
-                                             condition_type_concept_id, 
-                                             condition_status_concept_id, 
-                                             condition_start_date, 
-                                             condition_start_datetime, 
-                                             visit_occurrence_id,
-                                             condition_source_value) 
-                                             SELECT t.condition_occurrence_id, 
-                                                    p.person_id, 
-                                                    t.condition_concept_id, 
-                                                    t.condition_type_concept_id, 
-                                                    t.condition_status_concept_id, 
-                                                    t.condition_start_date, 
-                                                    t.condition_start_datetime, 
-                                                    v.visit_occurrence_id,
-                                                    t.condition_source_value 
-                                                       FROM {self.temp_table} t 
-                                                       INNER JOIN PERSON p ON t.anon_case_no = p.person_source_value
-                                                       INNER JOIN 
-                                                            (SELECT visit_occurrence_id, 
-						                                       row_number() over (
-												                   partition by CAST(LEFT(CAST(visit_occurrence_id AS TEXT), LENGTH(CAST(visit_occurrence_id AS TEXT)) - 2) AS INTEGER)
-											                    ) rownum,
-										                        CAST(LEFT(CAST(visit_occurrence_id AS TEXT), LENGTH(CAST(visit_occurrence_id AS TEXT)) - 2) AS INTEGER) AS truncated_visit_occurrence_id 
-									                        FROM VISIT_OCCURRENCE) v 
-                                                        ON v.truncated_visit_occurrence_id  = t.session_id AND v.rownum = 1''')) # Temporary solution to just pick the 1st row
+                connection.execute(text(f'''INSERT INTO condition_occurrence (
+                                            condition_occurrence_id,
+                                            person_id,
+                                            condition_concept_id,
+                                            condition_type_concept_id,
+                                            condition_status_concept_id,
+                                            condition_start_date,
+                                            condition_start_datetime,
+                                            visit_occurrence_id,
+                                            condition_source_value
+                                        )
+                                        SELECT t.condition_occurrence_id,
+                                            p.person_id,
+                                            t.condition_concept_id,
+                                            t.condition_type_concept_id,
+                                            t.condition_status_concept_id,
+                                            t.condition_start_date,
+                                            t.condition_start_datetime,
+                                            v.visit_occurrence_id,
+                                            t.condition_source_value
+                                        FROM { self.temp_table } t
+                                            INNER JOIN PERSON p ON t.anon_case_no = p.person_source_value
+                                            INNER JOIN (
+                                                SELECT visit_occurrence_id,
+                                                    row_number() over (
+                                                        partition by CAST(
+                                                            LEFT(
+                                                                CAST(visit_occurrence_id AS TEXT),
+                                                                LENGTH(CAST(visit_occurrence_id AS TEXT)) - 2
+                                                            ) AS INTEGER
+                                                        )
+                                                    ) rownum,
+                                                    CAST(
+                                                        LEFT(
+                                                            CAST(visit_occurrence_id AS TEXT),
+                                                            LENGTH(CAST(visit_occurrence_id AS TEXT)) - 2
+                                                        ) AS INTEGER
+                                                    ) AS truncated_visit_occurrence_id
+                                                FROM VISIT_OCCURRENCE
+                                            ) v ON v.truncated_visit_occurrence_id = t.session_id
+                                            AND v.rownum = 1''')) # Temporary solution to just pick the 1st row
         print(f"offset {self.offset} limit {self.limit} batch_count {len(transformed_batch)} ingested..")
 
     def fetch_total_count_source_postop_discharge(self):
