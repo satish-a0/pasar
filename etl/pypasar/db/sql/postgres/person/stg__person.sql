@@ -9,6 +9,7 @@
 -- 2024-09-01  2.00           Updated to use DENSE_RANK() for person_id
 -- 2024-09-02  3.00           Updated the schema name
 -- 2024-09-04  4.00           Updated CTEs to use filteredSource and prioritized non-null data selection
+-- 2024-10-01  5.00           Change race_concept_id to derive from the source_to_concept_map table
 -- *******************************************************************
 
 -- Create the staging view for the person table, assigning a unique person_id
@@ -47,14 +48,11 @@ CREATE OR REPLACE VIEW {OMOP_SCHEMA}.stg__person AS
                 WHEN 'FEMALE' THEN 8532
                 ELSE 0
             END AS gender_concept_id,
-            CASE race_source_value
-                WHEN 'Chinese' THEN 38003579
-                WHEN 'Indian' THEN 38003574
-                WHEN 'Malay' THEN 38003587
-                WHEN 'Singaporean' THEN 38003596
-                ELSE 0
-            END AS race_concept_id
-        FROM filteredSource
+            stcm.target_concept_id AS race_concept_id
+        FROM filteredSource AS fs
+        JOIN {OMOP_SCHEMA}.source_to_concept_map AS stcm
+            ON fs.race_source_value = stcm.source_code
+        WHERE stcm.source_vocabulary_id = 'SG_PASAR_RACE'
     ), 
     -- Calculate the year of birth
     computing AS (
