@@ -15,7 +15,7 @@ CREATE OR REPLACE VIEW {OMOP_SCHEMA}.stg__provider AS
     SELECT surgeon_table.anon_surgeon_name AS name, surgeon_table.surgical_specialty AS specialty
     FROM (
      SELECT anon_surgeon_name, LOWER(surgical_specialty) as surgical_specialty, count(*), ROW_NUMBER() OVER(PARTITION by anon_surgeon_name ORDER BY count(*) DESC) AS rnk
-      FROM {PREOP_SCHEMA}."operation"
+      FROM {INTRAOP_SCHEMA}."operation"
       WHERE anon_surgeon_name IS NOT NULL
       GROUP by anon_surgeon_name, LOWER(surgical_specialty)
       ORDER BY anon_surgeon_name, COUNT(*) DESC
@@ -26,7 +26,7 @@ CREATE OR REPLACE VIEW {OMOP_SCHEMA}.stg__provider AS
     SELECT anaesthetist_1_table.anon_plan_anaesthetist_1_name AS name, anaesthetist_1_table.plan_anaesthetist_1_type AS specialty
     FROM (
       SELECT anon_plan_anaesthetist_1_name, LOWER(plan_anaesthetist_1_type) as plan_anaesthetist_1_type, count(*), ROW_NUMBER() OVER(PARTITION by anon_plan_anaesthetist_1_name ORDER BY count(*) DESC) AS rnk
-      FROM {PREOP_SCHEMA}."operation"
+      FROM {INTRAOP_SCHEMA}."operation"
       WHERE anon_plan_anaesthetist_1_name IS NOT NULL
       GROUP by anon_plan_anaesthetist_1_name, LOWER(plan_anaesthetist_1_type)
       ORDER BY anon_plan_anaesthetist_1_name, COUNT(*) DESC
@@ -37,7 +37,7 @@ CREATE OR REPLACE VIEW {OMOP_SCHEMA}.stg__provider AS
     SELECT anaesthetist_2_table.anon_plan_anaesthetist_2_name AS name, anaesthetist_2_table.plan_anaesthetist_2_type AS specialty
     FROM (
       SELECT anon_plan_anaesthetist_2_name, LOWER(plan_anaesthetist_2_type) AS plan_anaesthetist_2_type, count(*), ROW_NUMBER() OVER(PARTITION by anon_plan_anaesthetist_2_name ORDER BY COUNT(*) DESC) AS rnk
-      FROM {PREOP_SCHEMA}."operation"
+      FROM {INTRAOP_SCHEMA}."operation"
       WHERE anon_plan_anaesthetist_2_name IS NOT NULL
       GROUP by anon_plan_anaesthetist_2_name, LOWER(plan_anaesthetist_2_type)
       ORDER BY anon_plan_anaesthetist_2_name, COUNT(*) DESC
