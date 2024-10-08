@@ -35,8 +35,8 @@ class person:
     def process(self):
         # List of SQL file paths
         sql_files = [
-            os.path.join(os.getenv("BASE_PATH"), "person/stg__person.sql"),
-            os.path.join(os.getenv("BASE_PATH"), "person/person.sql")
+            os.path.join(os.getenv("BASE_PATH"), "person", "stg__person.sql"),
+            os.path.join(os.getenv("BASE_PATH"), "person", "person.sql")
         ]
         self.execute_sql_files(sql_files)
 
@@ -44,7 +44,8 @@ class person:
         # Define placeholder to environment variable mappings
         placeholder_mapping = {
             "{OMOP_SCHEMA}": os.getenv("POSTGRES_OMOP_SCHEMA"),
-            "{PREOP_SCHEMA}": os.getenv("POSTGRES_SOURCE_PREOP_SCHEMA")
+            "{PREOP_SCHEMA}": os.getenv("POSTGRES_SOURCE_PREOP_SCHEMA"),
+            "{RACE_VOCAB_ID}": os.getenv("STCM_PREOP_CHAR_RACE")
         }
         
         with self.engine.connect() as connection:
