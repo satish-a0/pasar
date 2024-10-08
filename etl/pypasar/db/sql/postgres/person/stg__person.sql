@@ -10,6 +10,7 @@
 -- 2024-09-02  3.00           Updated the schema name
 -- 2024-09-04  4.00           Updated CTEs to use filteredSource and prioritized non-null data selection
 -- 2024-10-01  5.00           Change race_concept_id to derive from the source_to_concept_map table
+-- 2024-10-08  6.00           Update the source_vocabulary_id field in the STCM
 -- *******************************************************************
 
 -- Create the staging view for the person table, assigning a unique person_id
@@ -52,7 +53,7 @@ CREATE OR REPLACE VIEW {OMOP_SCHEMA}.stg__person AS
         FROM filteredSource AS fs
         JOIN {OMOP_SCHEMA}.source_to_concept_map AS stcm
             ON fs.race_source_value = stcm.source_code
-        WHERE stcm.source_vocabulary_id = 'SG_PASAR_RACE'
+        WHERE stcm.source_vocabulary_id = '{RACE_VOCAB_ID}'
     ), 
     -- Calculate the year of birth
     computing AS (
