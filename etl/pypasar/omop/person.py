@@ -35,8 +35,8 @@ class person:
     def process(self):
         # List of SQL file paths
         sql_files = [
-            os.path.join(os.getenv("BASE_PATH"), "person/stg__person.sql"),
-            os.path.join(os.getenv("BASE_PATH"), "person/person.sql")
+            os.path.join(os.getenv("BASE_PATH"), "person", "stg__person.sql"),
+            os.path.join(os.getenv("BASE_PATH"), "person", "person.sql")
         ]
         self.execute_sql_files(sql_files)
 
