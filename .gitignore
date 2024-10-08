@@ -3,6 +3,7 @@
 env*
 tmp
 private
+etl/pypasar/db/sql/postgres/source_to_concep_map
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
