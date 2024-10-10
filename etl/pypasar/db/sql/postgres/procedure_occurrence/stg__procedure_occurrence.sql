@@ -23,7 +23,7 @@ CREATE OR REPLACE VIEW {OMOP_SCHEMA}.stg__procedure_occurrence AS
                 32879 AS procedure_type_concept_id,
                 0 AS modifier_concept_id,
                 0 AS quantity,
-                provider.provider_id AS provider_id, -- clarify
+                provider.provider_id AS provider_id,
                 operation.session_id AS visit_occurrence_id,
                 0 AS visit_detail_id,
                 operation.procedure_code AS procedure_source_value,
@@ -55,7 +55,11 @@ CREATE OR REPLACE VIEW {OMOP_SCHEMA}.stg__procedure_occurrence AS
         FROM (
             SELECT  DISTINCT
                 person.person_id,
-                0 AS procedure_concept_id, -- This is source_code? No match found yet
+                CASE 
+                    WHEN crrt_type = 'CVVHDF - Continuous Veno-Venous Hemodiafiltration' THEN 4049846
+                    WHEN crrt_type = 'CVVHD - Continuous Veno-Venous Hemodialysis' THEN 4051329 
+                    ELSE 0 
+                END AS procedure_concept_id,
                 renal.crrt_authored_date AS procedure_date,
                 renal.dialysis_starttime AS dialysis_starttime,
                 CONCAT(renal.crrt_authored_date, ' ', renal.dialysis_starttime) ::timestamp AS procedure_datetime,
@@ -68,7 +72,11 @@ CREATE OR REPLACE VIEW {OMOP_SCHEMA}.stg__procedure_occurrence AS
                 CAST(NULL as INTEGER) AS visit_occurrence_id,
                 0 AS visit_detail_id,
                 renal.crrt_type AS procedure_source_value,
-                0 AS procedure_source_concept_id,  -- Need concept id mapping
+                CASE 
+                    WHEN crrt_type = 'CVVHDF - Continuous Veno-Venous Hemodiafiltration' THEN 4049846
+                    WHEN crrt_type = 'CVVHD - Continuous Veno-Venous Hemodialysis' THEN 4051329 
+                    ELSE 0 
+                END AS procedure_source_concept_id,
                 NULL AS modifier_source_value
             FROM {POSTOP_SCHEMA}.renal AS renal
             JOIN {OMOP_SCHEMA}.person AS person ON person.person_source_value = renal.anon_case_no
