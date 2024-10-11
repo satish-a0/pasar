@@ -1,10 +1,6 @@
 -- *******************************************************************
 -- NAME: stg__drug_exposure.sql
--- Create temp staging view before data load that brings in person_id, drug_type_concept_id
--- *******************************************************************
--- Todo:
--- Create drug_exposure_id
--- Provider_id, visit_occurrence_id
+-- Create temp staging view before data load that brings in person_id, drug_type_concept_id, days_supply
 -- *******************************************************************
 
 
