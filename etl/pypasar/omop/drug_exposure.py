@@ -12,6 +12,13 @@ class drug_exposure:
 
     def __init__(self):
         self.engine = postgres().get_engine()  # Get PG Connection
+        self.drugdrug_view = "temp_drugdrug_view"
+        self.drugmed_view = "temp_drugmed_view"
+        self.drug_exposure_stg_view = "stg__drug_exposure"
+        self.omop_schema = os.getenv("POSTGRES_OMOP_SCHEMA")
+        self.intraop_schema = os.getenv("POSTGRES_SOURCE_INTRAOP_SCHEMA")
+        self.drug_exposure_table = "drug_exposure"
+        #self.postop_schema = os.getenv("POSTGRES_SOURCE_POSTOP_SCHEMA")
 
     def execute(self):
         try:
@@ -27,13 +34,16 @@ class drug_exposure:
             with connection.begin():
                 # Set the schema for subsequent SQL operations
                 connection.execute(
-                    text(f'SET search_path TO {os.getenv("POSTGRES_OMOP_SCHEMA")}')
+                    text(f'SET search_path TO {self.omop_schema}')
                 )
+                
                 # Drop views created
-                connection.execute(text("DROP VIEW IF EXISTS temp_drug_exposure_view"))
-                connection.execute(text("DROP VIEW IF EXISTS stg__drug_exposure"))
-                # Clear all existing rows from the provider table
-                connection.execute(text("TRUNCATE TABLE drug_exposure"))
+                connection.execute(text(f"DROP VIEW IF EXISTS {self.drug_exposure_stg_view} CASCADE"))
+                connection.execute(text(f"DROP VIEW IF EXISTS {self.drugdrug_view}"))
+                connection.execute(text(f"DROP VIEW IF EXISTS {self.drugmed_view}"))
+                
+                # Clear all existing rows from the drug_exposure table
+                connection.execute(text(f"TRUNCATE TABLE {self.drug_exposure_table}"))
 
     def process(self):
         # In batches
@@ -44,18 +54,22 @@ class drug_exposure:
             with connection.begin():
                 # List of SQL file paths
                 sql_files = [
-                    os.path.join(os.getenv("BASE_PATH"), "drug_exposure/combined_tables.sql"),
-                    os.path.join(os.getenv("BASE_PATH"), "drug_exposure/stg__drug_exposure.sql"),
-                    os.path.join(os.getenv("BASE_PATH"), "drug_exposure/drug_exposure.sql")
+                    os.path.join(os.getenv("BASE_PATH"), f"{self.drug_exposure_table}/{self.drugdrug_view}.sql"),
+                    os.path.join(os.getenv("BASE_PATH"), f"{self.drug_exposure_table}/{self.drugmed_view}.sql"),
+                    os.path.join(os.getenv("BASE_PATH"), f"{self.drug_exposure_table}/{self.drug_exposure_stg_view}.sql"),
+                    os.path.join(os.getenv("BASE_PATH"), f"{self.drug_exposure_table}/{self.drug_exposure_table}.sql")
                 ]
                 self.execute_sql_files(sql_files)
 
     def execute_sql_files(self, file_paths):
         # Define placeholder to environment variable mappings
         placeholder_mapping = {
-            "{OMOP_SCHEMA}": os.getenv("POSTGRES_OMOP_SCHEMA"),
-            "{INTRAOP_SCHEMA}": "intraop",
-            "{POSTOP_SCHEMA}": "postop"
+            "{OMOP_SCHEMA}": self.omop_schema,
+            "{INTRAOP_SCHEMA}": self.intraop_schema,
+            "{DRUGMED_STCM_VIEW}": self.drugmed_view,
+            "{DRUGDRUG_STCM_VIEW}": self.drugdrug_view,
+            "{DRUG_EXPOSURE_STG_VIEW}": self.drug_exposure_stg_view,
+            "{DRUG_EXPOSURE_TABLE}": self.drug_exposure_table
         }
         with self.engine.connect() as connection:
                 with connection.begin():
