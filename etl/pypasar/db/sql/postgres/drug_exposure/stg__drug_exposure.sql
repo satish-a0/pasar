@@ -4,7 +4,6 @@
 -- *******************************************************************
 
 
--- Create the staging view for the person table, assigning a unique person_id
 create or replace view {OMOP_SCHEMA}.{DRUG_EXPOSURE_STG_VIEW} AS
 
 with combined as (

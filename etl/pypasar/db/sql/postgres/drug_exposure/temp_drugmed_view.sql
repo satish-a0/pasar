@@ -13,21 +13,21 @@ dm as (
 		anon_case_no,
 		session_id,
 		operation_id,
-		medication_startdate as drug_exposure_start_date,
-		medication_startdatetime as drug_exposure_start_datetime,
-		operation_enddate as drug_exposure_end_date,
-		(operation_enddate::text || ' ' || operation_endtime)::timestamp as drug_exposure_end_datetime,
-		dosage_individual as quantity,
-		medication_name as medication_name,
-		drug_name as drug_name,
+		medication_startdate as "drug_exposure_start_date",
+		medication_startdatetime as "drug_exposure_start_datetime",
+		operation_enddate as "drug_exposure_end_date",
+		(operation_enddate::text || ' ' || operation_endtime)::timestamp as "drug_exposure_end_datetime",
+		dosage_individual as "quantity",
+		medication_name as "medication_name",
+		drug_name as "drug_name",
 		case 
 			when right(upper(medication_name), 2) = '~T' then upper(left(medication_name, -2)) -- 65 records
 			else upper(medication_name)
 		end
-			as standardized_medication_name,
+			as "standardized_medication_name",
 		
-		'intraop' as source_schema,
-		'drugmed' as source_table
+		'intraop' as "source_schema",
+		'drugmed' as "source_table"
 	from {INTRAOP_SCHEMA}.drugmed -- 16962 records
 	where medication_name is not null -- 53 records
     ), -- 16909 records
@@ -67,7 +67,7 @@ dm_stcm_non_duplicated as (
 		dm_non_duplicated.*
 	from dm_non_duplicated
 	left join stcm_non_duplicated
-		on stcm_non_duplicated.source_code = dm_non_duplicated.medication_name
+		on stcm_non_duplicated.source_code = dm_non_duplicated.standardized_medication_name
     ), -- 16134 records
     
 -- Joined table with matching target_concept_id
@@ -156,8 +156,8 @@ final_dm_stcm as (
 		drug_exposure_end_date,
 		drug_exposure_end_datetime,
 		quantity,
-		medication_name as drug_source_value,
-		target_concept_id as drug_concept_id,
+		medication_name as "drug_source_value",
+		target_concept_id as "drug_concept_id",
 		source_schema,
 		source_table
 	from dm_stcm_non_duplicated_match -- 15662 records
@@ -175,8 +175,8 @@ final_dm_stcm as (
 		drug_exposure_end_date,
 		drug_exposure_end_datetime,
 		quantity,
-		medication_name as drug_source_value,
-		case when new_target_concept_id is null then 0 else new_target_concept_id end as drug_concept_id,
+		medication_name as "drug_source_value",
+		case when new_target_concept_id is null then 0 else new_target_concept_id end as "drug_concept_id",
 		source_schema,
 		source_table
 	from dm_stcm_non_duplicated_match_2 
@@ -195,8 +195,8 @@ final_dm_stcm as (
 		drug_exposure_end_date,
 		drug_exposure_end_datetime,
 		quantity,
-		medication_name as drug_source_value,
-		target_concept_id as drug_concept_id,
+		medication_name as "drug_source_value",
+		target_concept_id as "drug_concept_id",
 		source_schema,
 		source_table
 	from dm_stcm_duplicated_non_cefazolin -- 462 records
@@ -214,8 +214,8 @@ final_dm_stcm as (
 		drug_exposure_end_date,
 		drug_exposure_end_datetime,
 		quantity,
-		medication_name as drug_source_value,
-		target_concept_id as drug_concept_id,
+		medication_name as "drug_source_value",
+		target_concept_id as "drug_concept_id",
 		source_schema,
 		source_table
 	from dm_stcm_duplicated_cefazolin -- 544 records
