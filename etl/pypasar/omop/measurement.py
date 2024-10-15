@@ -308,7 +308,7 @@ class measurement():
         if len(source_batch) > 0:
             measurement_df["measurement_date"] = pd.to_datetime(source_batch["session_startdate"]).dt.date
             measurement_df["measurement_type_concept_id"] = 32879
-            value_as_number_df = source_batch[measurement_score_columns] # Assumption Ignoring "o2_supplementaries" since its an additional value for the o2_saturation
+            value_as_number_df = source_batch[measurement_score_columns]
             measurement_df["value_as_number"] = value_as_number_df.apply(lambda row: row.tolist(), axis=1)
             measurement_df["measurement_source_value"] = [measurement_score_columns]*len(measurement_df)
             # value_as_source_df = source_batch[["o2_supplementaries"]]
@@ -332,7 +332,7 @@ class measurement():
         if len(source_batch) > 0:
             measurement_df["measurement_date"] = pd.to_datetime(source_batch["session_startdate"]).dt.date
             measurement_df["measurement_type_concept_id"] = 32879
-            value_as_source_df = source_batch[measurement_score_columns] # Assumption Ignoring "o2_supplementaries" since its an additional value for the o2_saturation
+            value_as_source_df = source_batch[measurement_score_columns]
             measurement_df["value_source_value"] = value_as_source_df.apply(lambda row: row.tolist(), axis=1)
             measurement_df["measurement_source_value"] = [measurement_score_columns]*len(measurement_df)
 
