@@ -9,10 +9,8 @@ with
 dm as (
 	select 
 		id,
-		anon_case_no_clindoc,
 		anon_case_no,
 		session_id,
-		operation_id,
 		medication_startdate as "drug_exposure_start_date",
 		medication_startdatetime as "drug_exposure_start_datetime",
 		operation_enddate as "drug_exposure_end_date",
@@ -26,7 +24,7 @@ dm as (
 		end
 			as "standardized_medication_name",
 		
-		'intraop' as "source_schema",
+		'{INTRAOP_SCHEMA}' as "source_schema",
 		'drugmed' as "source_table"
 	from {INTRAOP_SCHEMA}.drugmed -- 16962 records
 	where medication_name is not null -- 53 records
@@ -147,10 +145,8 @@ dm_stcm_duplicated_cefazolin as (
 final_dm_stcm as (
 	select
 		id,
-		anon_case_no_clindoc,
 		anon_case_no,
 		session_id,
-		operation_id,
 		drug_exposure_start_date,
 		drug_exposure_start_datetime,
 		drug_exposure_end_date,
@@ -166,10 +162,8 @@ final_dm_stcm as (
 	
 	select 
 		id,
-		anon_case_no_clindoc,
 		anon_case_no,
 		session_id,
-		operation_id,
 		drug_exposure_start_date,
 		drug_exposure_start_datetime,
 		drug_exposure_end_date,
@@ -186,10 +180,8 @@ final_dm_stcm as (
 	
 	select
 		id,
-		anon_case_no_clindoc,
 		anon_case_no,
 		session_id,
-		operation_id,
 		drug_exposure_start_date,
 		drug_exposure_start_datetime,
 		drug_exposure_end_date,
@@ -205,10 +197,8 @@ final_dm_stcm as (
 	
 	select
 		id,
-		anon_case_no_clindoc,
 		anon_case_no,
 		session_id,
-		operation_id,
 		drug_exposure_start_date,
 		drug_exposure_start_datetime,
 		drug_exposure_end_date,

@@ -9,11 +9,9 @@ with
 dd as (
 	select 
 		id,
-		anon_case_no_clindoc,
 		anon_case_no,
 		session_id,
-		operation_id,
-		coalesce(infusion_startdatetime, operation_startdate)::timestamp as "drug_exposure_start_date",
+		coalesce(infusion_startdatetime, operation_startdate)::date as "drug_exposure_start_date",
 		coalesce(
 			infusion_startdatetime,
 			(operation_startdate::text || ' ' || operation_starttime)::timestamp
@@ -24,7 +22,7 @@ dd as (
 		concentration, -- not used in stcm
 		drug_name,
 		upper(drug_name) as "standardized_drug_name",
-		'intraop' as "source_schema",
+		'{INTRAOP_SCHEMA}' as "source_schema",
 		'drugdrug' as "source_table"
 	from {INTRAOP_SCHEMA}.drugdrug -- 2469 records
 	where drug_name is not null -- 125 records
@@ -51,10 +49,8 @@ dd_stcm as (
 
 select 
     id,
-    anon_case_no_clindoc,
     anon_case_no,
     session_id,
-    operation_id,
     drug_exposure_start_date,
     drug_exposure_start_datetime,
     drug_exposure_end_date,
