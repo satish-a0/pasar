@@ -6,21 +6,6 @@ from .util import mapping_wrapper
 
 class ObservationMapping():
 
-    def __concatenate_multiple_columns_into_one(self, df: pd.DataFrame, observation_mapping: any) -> pd.DataFrame:
-        for table_source_name, columns in observation_mapping["pasar"]:
-            # Concat all text based on table and column config in value_as_string_config
-            # TODO: Look into optimizing function
-            df.loc[df[SOURCE_TABLE_COL_NAME] == table_source_name, observation_mapping["omop"]] = df[columns].apply(
-                lambda x: ','.join(x.astype(str)),
-                axis=1
-            )
-
-        # TODO: TO REMOVE: TEMPOARILY ADD SO THAT INGESTION CAN WORK DUE TO VARCHAR(50) CONSTRAINT
-        df[observation_mapping["omop"]
-           ] = df[observation_mapping["omop"]].str.slice(0, 50)
-
-        return df[[observation_mapping["omop"]]]
-
     @mapping_wrapper
     def map_observation_id(self, df: pd.DataFrame, rowsMapped: int) -> pd.DataFrame:
         observation_id_mapping = ObservationMappingConfig.observation_id_mapping
@@ -67,21 +52,6 @@ class ObservationMapping():
         df[visit_occurrence_id_mapping["omop"]
            ] = df[visit_occurrence_id_mapping["pasar"]]
         return df[[visit_occurrence_id_mapping["omop"]]]
-
-    @mapping_wrapper
-    def map_value_as_string(self, df: pd.DataFrame) -> pd.DataFrame:
-        value_as_string_mapping = ObservationMappingConfig.value_as_string_mapping
-        return self.__concatenate_multiple_columns_into_one(df, value_as_string_mapping)
-
-    @mapping_wrapper
-    def map_observation_source_value(self, df: pd.DataFrame) -> pd.DataFrame:
-        observation_source_value_mapping = ObservationMappingConfig.observation_source_value_mapping
-        return self.__concatenate_multiple_columns_into_one(df, observation_source_value_mapping)
-
-    @mapping_wrapper
-    def map_value_source_value(self, df: pd.DataFrame) -> pd.DataFrame:
-        value_source_value_mapping = ObservationMappingConfig.value_source_value_mapping
-        return self.__concatenate_multiple_columns_into_one(df, value_source_value_mapping)
 
     @mapping_wrapper
     def map_value_as_number(self, df: pd.DataFrame) -> pd.DataFrame:
