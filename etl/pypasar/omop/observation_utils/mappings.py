@@ -47,6 +47,7 @@ class ObservationMapping():
 
     @mapping_wrapper
     def map_visit_occurrence_id(self, df: pd.DataFrame) -> pd.DataFrame:
+        # TODO: Update logic
         visit_occurrence_id_mapping = ObservationMappingConfig.visit_occurrence_id_mapping
 
         df[visit_occurrence_id_mapping["omop"]
@@ -131,21 +132,17 @@ class ObservationMapping():
             else:
                 temp_df[value_as_string_mapping["omop"]] = None
 
-            # TODO: To confirm if mapping to eav_column name
             # map observation_source_value
             if eav_column in osb_table_mapping:
                 temp_df[observation_source_value_mapping["omop"]
                         ] = eav_column
-
             else:
                 temp_df[observation_source_value_mapping["omop"]] = None
 
-            # TODO: To confirm if mapping to eav_column name
             # map value_source_value
             if eav_column in vsv_table_mapping:
                 temp_df[value_source_value_mapping["omop"]
                         ] = df[eav_column].astype(str)
-
             else:
                 temp_df[value_source_value_mapping["omop"]] = None
 
