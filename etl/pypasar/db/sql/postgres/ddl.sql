@@ -506,9 +506,9 @@ CREATE TABLE concept_ancestor (
 );
 --HINT DISTRIBUTE ON RANDOM
 CREATE TABLE source_to_concept_map (
-	source_code varchar(50) NOT NULL,
+	source_code varchar(100) NOT NULL,
 	source_concept_id integer NOT NULL,
-	source_vocabulary_id varchar(20) NOT NULL,
+	source_vocabulary_id varchar(40) NOT NULL,
 	source_code_description varchar(255) NULL,
 	target_concept_id integer NOT NULL,
 	target_vocabulary_id varchar(20) NOT NULL,
