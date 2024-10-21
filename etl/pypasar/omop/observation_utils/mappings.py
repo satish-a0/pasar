@@ -137,9 +137,6 @@ class ObservationMapping():
                 temp_df[observation_source_value_mapping["omop"]
                         ] = eav_column
 
-                # TODO: TO REMOVE: TEMPOARILY ADD SO THAT INGESTION CAN WORK DUE TO VARCHAR(50) CONSTRAINT
-                temp_df[observation_source_value_mapping["omop"]
-                        ] = temp_df[observation_source_value_mapping["omop"]].str.slice(0, 50)
             else:
                 temp_df[observation_source_value_mapping["omop"]] = None
 
@@ -149,9 +146,6 @@ class ObservationMapping():
                 temp_df[value_source_value_mapping["omop"]
                         ] = df[eav_column].astype(str)
 
-                # TODO: TO REMOVE: TEMPOARILY ADD SO THAT INGESTION CAN WORK DUE TO VARCHAR(50) CONSTRAINT
-                temp_df[value_source_value_mapping["omop"]
-                        ] = temp_df[value_source_value_mapping["omop"]].str.slice(0, 50)
             else:
                 temp_df[value_source_value_mapping["omop"]] = None
 

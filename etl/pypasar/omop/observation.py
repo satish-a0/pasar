@@ -156,7 +156,7 @@ class observation:
             df = pd.DataFrame()
             for source in SOURCE_TABLES:
                 temp = pd.read_sql(
-                    f"SELECT * from {source} LIMIT 1000;",
+                    f"SELECT * from {source};",
                     con=connection
                 )
                 # Add a column to indicate which source row is from
