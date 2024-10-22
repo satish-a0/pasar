@@ -34,9 +34,9 @@ class condition_occurrence:
         # Truncate
         self.truncate_table(f"{self.omop_schema}.condition_occurrence")
         # Create temporary table based on concept relationship and concept tables
-        self.create_temp_table()
+        self.create_temp_concept_table()
 
-    def create_temp_table(self):
+    def create_temp_concept_table(self):
          with self.engine.connect() as connection:
             with connection.begin():
                 connection.execute(text(f'SET search_path TO {self.omop_schema}'))
