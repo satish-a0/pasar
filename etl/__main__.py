@@ -5,6 +5,10 @@ from dotenv import load_dotenv
 from importlib import import_module
 from pypasar.db.utils import postgres
 
+import logging
+# Get LOGLEVEL from env and sets logger log level, defaults to ERROR
+logging.basicConfig(level=os.getenv("LOGLEVEL", "ERROR"))
+
 # Load environment variables from the .env file
 load_dotenv()
 
