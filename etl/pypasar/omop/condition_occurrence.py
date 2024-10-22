@@ -16,7 +16,7 @@ class condition_occurrence:
         self.engine = postgres().get_engine()  # Get PG Connection
         self.omop_schema = os.getenv("POSTGRES_OMOP_SCHEMA")
         self.source_postop_schema = os.getenv("POSTGRES_SOURCE_POSTOP_SCHEMA")
-        self.limit, self.offset = int(os.getenv("PROCESSING_BATCH_SIZE")), 1
+        self.limit, self.offset = int(os.getenv("PROCESSING_BATCH_SIZE")), 0
         self.temp_table = f'temp_condition_occurrence_{os.urandom(15).hex()}'
         self.temp_concept_table = f'temp_concept_{os.urandom(15).hex()}'
         print(f'condition_occurrence temporary table {self.temp_table}, concept temporary table {self.temp_concept_table}')
@@ -129,7 +129,7 @@ class condition_occurrence:
             condition_occ_df['session_id'] = source_batch['session_id'] # Visit occurrence id source value without suffix
             condition_occ_df['condition_source_value'] = source_batch['diagnosis_code']
             condition_occ_df['condition_source_description'] = source_batch['diagnosis_description']
-            condition_occ_df['condition_occurrence_id'] = range(self.offset, (self.offset + len(source_batch)))
+            condition_occ_df['condition_occurrence_id'] = range(self.offset + 1, (self.offset + 1 + len(source_batch)))
             print(f'condition_occ_df {len(condition_occ_df)}')
             print(condition_occ_df.head(3))
         
