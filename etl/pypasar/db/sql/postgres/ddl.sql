@@ -174,7 +174,7 @@ CREATE TABLE measurement (
 	provider_id integer NULL,
 	visit_occurrence_id integer NULL,
 	visit_detail_id integer NULL,
-	measurement_source_value varchar(50) NULL,
+	measurement_source_value varchar(100) NULL,
 	measurement_source_concept_id integer NULL,
 	unit_source_value varchar(50) NULL,
 	unit_source_concept_id integer NULL,
