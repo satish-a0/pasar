@@ -27,6 +27,7 @@ class measurement():
         self.source_preop_schema = os.getenv("POSTGRES_SOURCE_PREOP_SCHEMA")
         self.source_intraop_schema = os.getenv("POSTGRES_SOURCE_INTRAOP_SCHEMA")
         self.source_postop_schema = os.getenv("POSTGRES_SOURCE_POSTOP_SCHEMA")
+        self.temp_concept_table = f'temp_concept_measurement_{os.urandom(15).hex()}'
         self.measurement_id_start = 1
         self.source_tables_cols = [{"table": self.source.PREOP_LAB.value, 
                                     "columns": {"anon_case_no": str, "id": int,
@@ -75,7 +76,7 @@ class measurement():
                                               "osa_risk_index": str, "act_risk": str, "person_id": str}}, 
                                    {"table": self.source.INTRAOP_NURVITALS.value, 
                                     "columns": {"anon_case_no": str, "id": int, "person_id": str,
-                                              "authored_datetime": "datetime64[ns]", "document_item_desc": str, "document_item_right_label": str, "value_text": str}}]
+                                              "authored_datetime": "datetime64[ns]", "document_item_name": str, "value_text": str}}]
 
     def execute(self):
         try:
@@ -91,10 +92,29 @@ class measurement():
         with self.engine.connect() as connection:
             with connection.begin():
                 connection.execute(text(f"Truncate table {self.omop_schema}.measurement"))
+        # Create temporary concept table
+        self.create_temp_concept_table()
+
+
+    def create_temp_concept_table(self):
+         with self.engine.connect() as connection:
+            with connection.begin():
+                connection.execute(text(f'SET search_path TO {self.omop_schema}'))
+                # This is used to map source to concept map table
+                connection.execute(text(f'''CREATE TEMPORARY TABLE { self.temp_concept_table } AS
+                                            select sc.source_code, sc.target_concept_id, sc.source_vocabulary_id
+                                            from {self.omop_schema}.source_to_concept_map sc
+                                                inner join {self.omop_schema}.concept c
+                                                    ON sc.target_vocabulary_id = c.vocabulary_id
+                                                    and c.domain_id = 'Measurement'
+                                                    and c.invalid_reason is null
+                                                    and sc.target_concept_id = c.concept_id'''
+                                    )
+                                )
 
     def process(self):
         for source_table_cols in self.source_tables_cols:
-            if source_table_cols["table"] in [f"{self.source_preop_schema}.lab"]:
+            if source_table_cols["table"] in [f"{self.source_intraop_schema}.nurvitals"]:
                 print(source_table_cols)
                 self.limit, self.offset = int(os.getenv("PROCESSING_BATCH_SIZE")), 0
                 self.process_by_source_table(source_table_cols)
@@ -108,7 +128,7 @@ class measurement():
             source_batch = self.retrieve(source_table_cols)
             print(f"measurement id start: {self.measurement_id_start}")
             transformed_batch = self.transform(source_table_cols, source_batch)
-            self.measurement_id_start += len(source_batch)
+            self.measurement_id_start += len(transformed_batch)
             del source_batch
             self.ingest(transformed_batch)
             del transformed_batch
@@ -195,6 +215,10 @@ class measurement():
 
     def transform_preop_lab(self, source_table_cols, source_batch, measurement_df):
         print(f"INSIDE transform_preop_lab..")
+        
+        # Load specific source codes mapping into df
+        concept_df = pd.read_sql_query(f"select source_code, target_concept_id from {self.temp_concept_table} where source_vocabulary_id='SG_PASAR_PREOP_LAB'", con=self.engine)
+
         if len(source_batch) > 0:
             measurement_df["person_id"] = source_batch["person_id"]
             measurement_df["measurement_date"] = pd.to_datetime(source_batch["preop_lab_collection_datetime"]).dt.date
@@ -202,18 +226,29 @@ class measurement():
             measurement_df["measurement_type_concept_id"] = 32879
             measurement_df["value_as_number"] = source_batch["preop_lab_result_value"]
             measurement_df["measurement_source_value"] = source_batch["preop_lab_test_description"]
+            
+            # Left Join with temporary concept df
+            measurement_df = pd.merge(measurement_df, concept_df, how="left", left_on='measurement_source_value', right_on='source_code')
+            measurement_df["measurement_concept_id"] = measurement_df["target_concept_id"]
+            measurement_df.fillna({"measurement_concept_id": 0}, inplace=True) # For those missing standard concept mapping
+            measurement_df.drop(['source_code', 'target_concept_id'], axis=1, inplace=True)
+            
+            measurement_df["visit_occurrence_id"] = 0 # TODO: Update
             measurement_df["measurement_id"] = range(self.measurement_id_start, (self.measurement_id_start + len(measurement_df)))
 
-            measurement_df["measurement_concept_id"] = 0 # TODO: Update Vocab concept id for "preop_lab_result_value"
-            measurement_df["visit_occurrence_id"] = 0 # TODO: Update
 
-        print(measurement_df.head(100))
+        # print(measurement_df.head(3))
+        del concept_df
         return measurement_df
 
     def transform_preop_char(self, source_table_cols, source_batch, measurement_df):
-        print(f"INSIDE transform_preop_char..")
         # 1 to Many
+        print(f"INSIDE transform_preop_char..")
+        
         measurement_score_columns = ["height","weight","bmi", "systolic_bp", "diastolic_bp", "heart_rate", "o2_saturation", "temperature", "pain_score"]
+        # 1:1 mapping index between measurement_score_columns and measurement_char_concept_ids
+        measurement_char_concept_ids = [3036277, 3025315, 3038553, 3004249, 3012888, 3027018, 3013502, 3020891, 43055141]
+        
         if len(source_batch) > 0:
             measurement_df["person_id"] = source_batch["person_id"]
             measurement_df["measurement_date"] = pd.to_datetime(source_batch["session_startdate"]).dt.date
@@ -223,18 +258,30 @@ class measurement():
             measurement_df["measurement_source_value"] = [measurement_score_columns]*len(measurement_df)
             # value_as_source_df = source_batch[["o2_supplementaries"]]
             # measurement_df["value_source_value"] = value_as_source_df.apply(lambda row: row.tolist(), axis=1)
+            measurement_df["measurement_concept_id"] = [measurement_char_concept_ids]*len(measurement_df)
 
-            measurement_df["measurement_concept_id"] = 0 # TODO: Update Vocab concept id
+            # To maintain linkage between the records defined in measurement_score_columns
+            measurement_df["meas_event_field_concept_id"] = 1147330
+            measurement_df["unique_id"] = range(self.measurement_id_start, (self.measurement_id_start + len(measurement_df)))
+            measurement_df["measurement_event_id"] = measurement_df["unique_id"].apply(lambda row: [row]*len(measurement_score_columns))
+            del measurement_df["unique_id"]
+
             measurement_df["visit_occurrence_id"] = 0 # TODO: Update 
-            
-            measurement_df = measurement_df.explode(['value_as_number', 'measurement_source_value'])
+
+            # Transpose magic happens
+            measurement_df = measurement_df.explode(['value_as_number', 'measurement_source_value', 'measurement_concept_id', 'measurement_event_id'])
             measurement_df = measurement_df.dropna(subset=['value_as_number'], thresh=1)
             measurement_df["measurement_id"] = range(self.measurement_id_start, (self.measurement_id_start + len(measurement_df)))
-            print(measurement_df.head(len(measurement_df)))
+            print(measurement_df.head(3))
+
         return measurement_df
 
     def transform_intraop_aimsvitals(self, source_table_cols, source_batch, measurement_df):
         print(f"INSIDE transform_intraop_aimsvitals..")
+        
+        # Load specific source codes mapping into df
+        concept_df = pd.read_sql_query(f"select source_code, target_concept_id from {self.temp_concept_table} where source_vocabulary_id='SG_PASAR_INTRAOP_AIMS_VITALS'", con=self.engine)
+
         if len(source_batch) > 0:
             measurement_df["person_id"] = source_batch["person_id"]
             measurement_df["measurement_date"] = pd.to_datetime(source_batch["vital_date"]).dt.date
@@ -243,15 +290,25 @@ class measurement():
             measurement_df["measurement_type_concept_id"] = 32879
             measurement_df["value_as_number"] = source_batch["vital_num_value"]
             measurement_df["measurement_source_value"] = source_batch["vitalcode"]
-            measurement_df["measurement_id"] = range(self.measurement_id_start, (self.measurement_id_start + len(measurement_df)))
-            measurement_df["measurement_concept_id"] = 0 # TODO: Update Vocab concept id for "vital_num_value"
+            
+            # Left Join with temporary concept df
+            measurement_df = pd.merge(measurement_df, concept_df, how="left", left_on='measurement_source_value', right_on='source_code')
+            measurement_df["measurement_concept_id"] = measurement_df["target_concept_id"]
+            measurement_df.fillna({"measurement_concept_id": 0}, inplace=True) # For those missing standard concept mapping
+            measurement_df.drop(['source_code', 'target_concept_id'], axis=1, inplace=True)
+            
             measurement_df["visit_occurrence_id"] = 0 # TODO: Update
+            measurement_df["measurement_id"] = range(self.measurement_id_start, (self.measurement_id_start + len(measurement_df)))
 
         # print(measurement_df.head(1))
         return measurement_df
 
     def transform_intraop_operation(self, source_table_cols, source_batch, measurement_df):
         print(f"INSIDE transform_intraop_operation..")
+
+        # Load specific source codes mapping into df
+        concept_df = pd.read_sql_query(f"select source_code, target_concept_id from {self.temp_concept_table} where source_vocabulary_id='SG_PASAR_INTRAOP_AIMS_VITALS'", con=self.engine)
+
         if len(source_batch) > 0:
             measurement_df["person_id"] = source_batch["person_id"]
             measurement_df["measurement_date"] = pd.to_datetime(source_batch["vital_signs_taken_date"]).dt.date
@@ -260,16 +317,26 @@ class measurement():
             measurement_df["measurement_type_concept_id"] = 32879
             measurement_df["value_as_number"] = source_batch["vital_signs_result"]
             measurement_df["measurement_source_value"] = source_batch["vital_code"]
+
+            # Left Join with temporary concept df
+            measurement_df = pd.merge(measurement_df, concept_df, how="left", left_on='measurement_source_value', right_on='source_code')
+            measurement_df["measurement_concept_id"] = measurement_df["target_concept_id"]
+            measurement_df.fillna({"measurement_concept_id": 0}, inplace=True) # For those missing standard concept mapping
+            measurement_df.drop(['source_code', 'target_concept_id'], axis=1, inplace=True)            
+            
+            measurement_df["visit_occurrence_id"] = 0 # TODO: Update
             measurement_df["measurement_id"] = range(self.measurement_id_start, (self.measurement_id_start + len(measurement_df)))
 
-            measurement_df["measurement_concept_id"] = 0 # TODO: Update Vocab concept id for "preop_lab_result_value"
-            measurement_df["visit_occurrence_id"] = 0 # TODO: Update
-
         print(measurement_df.head(1))
+        del concept_df
         return measurement_df
 
     def transform_postop_lab(self, source_table_cols, source_batch, measurement_df):
         print(f"INSIDE transform_postop_lab..")
+
+        # Load specific source codes mapping into df
+        concept_df = pd.read_sql_query(f"select source_code, target_concept_id from {self.temp_concept_table} where source_vocabulary_id='SG_PASAR_POSTOP_LABS_ALL'", con=self.engine)
+
         # Assumption picking only max values for simplicity and ignoring the min values
         if len(source_batch) > 0:
             measurement_df["person_id"] = source_batch["person_id"]
@@ -280,29 +347,46 @@ class measurement():
             measurement_df["measurement_source_value"] = source_batch["postop_lab_test_desc"]
             measurement_df["measurement_id"] = range(self.measurement_id_start, (self.measurement_id_start + len(measurement_df)))
 
-            measurement_df["measurement_concept_id"] = 0 # TODO: Update Vocab concept id for "postop_lab_test_desc"
+            # Left Join with temporary concept df
+            measurement_df = pd.merge(measurement_df, concept_df, how="left", left_on='measurement_source_value', right_on='source_code')
+            measurement_df["measurement_concept_id"] = measurement_df["target_concept_id"]
+            measurement_df.fillna({"measurement_concept_id": 0}, inplace=True) # For those missing standard concept mapping
+            measurement_df.drop(['source_code', 'target_concept_id'], axis=1, inplace=True)         
+
             measurement_df["visit_occurrence_id"] = 0 # TODO: Update
+            measurement_df["measurement_id"] = range(self.measurement_id_start, (self.measurement_id_start + len(measurement_df)))
 
         print(measurement_df.head(1))
+        del concept_df
         return measurement_df
 
 
     def transform_postop_labsall(self, source_table_cols, source_batch, measurement_df):
         print(f"INSIDE transform_postop_labsall..")
+
+        # Load specific source codes mapping into df
+        concept_df = pd.read_sql_query(f"select source_code, target_concept_id from {self.temp_concept_table} where source_vocabulary_id='SG_PASAR_POSTOP_LABS_ALL'", con=self.engine)
+
         if len(source_batch) > 0:
             measurement_df["person_id"] = source_batch["person_id"]
             measurement_df["measurement_date"] = pd.to_datetime(source_batch["gen_lab_specimen_collection_date"]).dt.date
-            measurement_df["measurement_datetime"] = source_batch[['gen_lab_specimen_collection_date','gen_lab_specimen_collection_time']].astype(str).apply(lambda x: datetime.strptime(x.gen_lab_specimen_collection_date + x.gen_lab_specimen_collection_time, '%Y-%m-%d%H:%M:%S'), axis=1)
+            measurement_df["measurement_datetime"] = None
             measurement_df["measurement_time"] = source_batch["gen_lab_specimen_collection_time"]
             measurement_df["measurement_type_concept_id"] = 32879
-            measurement_df["value_as_number"] = source_batch["gen_lab_result_value"]
+            measurement_df["value_source_value"] = source_batch["gen_lab_result_value"]
             measurement_df["measurement_source_value"] = source_batch["gen_lab_lab_test_code"]
+
+            # Left Join with temporary concept df
+            measurement_df = pd.merge(measurement_df, concept_df, how="left", left_on='measurement_source_value', right_on='source_code')
+            measurement_df["measurement_concept_id"] = measurement_df["target_concept_id"]
+            measurement_df.fillna({"measurement_concept_id": 0}, inplace=True) # For those missing standard concept mapping
+            measurement_df.drop(['source_code', 'target_concept_id'], axis=1, inplace=True)
+            
+            measurement_df["visit_occurrence_id"] = 0 # TODO: Update
             measurement_df["measurement_id"] = range(self.measurement_id_start, (self.measurement_id_start + len(measurement_df)))
 
-            measurement_df["measurement_concept_id"] = 0 # TODO: Update Vocab concept id for "gen_lab_lab_test_code"
-            measurement_df["visit_occurrence_id"] = 0 # TODO: Update
-
         print(measurement_df.head(1))
+        del concept_df
         return measurement_df
 
     def transform_preop_others(self, source_table_cols, source_batch, measurement_df):
@@ -316,10 +400,8 @@ class measurement():
             value_as_number_df = source_batch[measurement_score_columns]
             measurement_df["value_as_number"] = value_as_number_df.apply(lambda row: row.tolist(), axis=1)
             measurement_df["measurement_source_value"] = [measurement_score_columns]*len(measurement_df)
-            # value_as_source_df = source_batch[["o2_supplementaries"]]
-            # measurement_df["value_source_value"] = value_as_source_df.apply(lambda row: row.tolist(), axis=1)
 
-            measurement_df["measurement_concept_id"] = 0 # TODO: Update Vocab concept id
+            measurement_df["measurement_concept_id"] = 0 # Lack of information on mapping
             measurement_df["visit_occurrence_id"] = 0 # TODO: Update 
             
             measurement_df = measurement_df.explode(['value_as_number', 'measurement_source_value'])
@@ -341,7 +423,7 @@ class measurement():
             measurement_df["value_source_value"] = value_as_source_df.apply(lambda row: row.tolist(), axis=1)
             measurement_df["measurement_source_value"] = [measurement_score_columns]*len(measurement_df)
 
-            measurement_df["measurement_concept_id"] = 0 # TODO: Update Vocab concept id
+            measurement_df["measurement_concept_id"] = 0 # Lack of information on mapping
             measurement_df["visit_occurrence_id"] = 0 # TODO: Update 
             
             measurement_df = measurement_df.explode(['value_source_value', 'measurement_source_value'])
@@ -352,19 +434,30 @@ class measurement():
 
     def transform_intraop_nurvitals(self, source_table_cols, source_batch, measurement_df):
         print(f"INSIDE transform_intraop_nurvitals..")
+
+        # Load specific source codes mapping into df
+        concept_df = pd.read_sql_query(f"select source_code, target_concept_id from {self.temp_concept_table} where source_vocabulary_id='SG_PASAR_INTRAOP_NUR_VITALS'", con=self.engine)
+
         if len(source_batch) > 0:
             measurement_df["person_id"] = source_batch["person_id"]
             measurement_df["measurement_date"] = pd.to_datetime(source_batch["authored_datetime"]).dt.date
             measurement_df["measurement_datetime"] = source_batch["authored_datetime"]
-            measurement_df["measurement_source_value"] = source_batch["document_item_desc"]
+            measurement_df["measurement_source_value"] = source_batch["document_item_name"]
             measurement_df["measurement_type_concept_id"] = 32879
+
+            measurement_df["value_source_value"] = source_batch["value_text"] # Contains mix of text and numeric. Could replicate the numeric values to othe column value_as_number based on the type of document_item_name/measurement_source_value
+            
+            # Left Join with temporary concept df
+            measurement_df = pd.merge(measurement_df, concept_df, how="left", left_on='measurement_source_value', right_on='source_code')
+            measurement_df["measurement_concept_id"] = measurement_df["target_concept_id"]
+            measurement_df.fillna({"measurement_concept_id": 0}, inplace=True) # For those missing standard concept mapping
+            measurement_df.drop(['source_code', 'target_concept_id'], axis=1, inplace=True)
+            
+            measurement_df["visit_occurrence_id"] = 0 # TODO: Update
             measurement_df["measurement_id"] = range(self.measurement_id_start, (self.measurement_id_start + len(measurement_df)))
 
-            measurement_df["value_source_value"] = source_batch["value_text"] # Contains mix of text and numeric. Could replicate the numeric values to othe column value_as_number based on the type of document_item_desc/measurement_source_value
-            measurement_df["measurement_concept_id"] = 0 # TODO: Update
-            measurement_df["visit_occurrence_id"] = 0 # TODO: Update
-
         print(measurement_df.head(1))
+        del concept_df
         return measurement_df
 
     def ingest(self, transformed_batch):
