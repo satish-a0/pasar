@@ -149,12 +149,94 @@ class ObservationMappingConfig:
         },
         "omop": "value_source_value",
     }
+    observation_concept_id_mapping = {
+        "pasar": {
+            "preop.riskindex": [
+                "high_risk_op",
+                "h_o_ihd",
+                "h_o_chf",
+                "h_o_cva",
+                "dm_on_insulin",
+                "hypertension",
+                "history_of_osa",
+                "loud_snoring",
+                "daytime_tiredness",
+                "apnoea",
+                "cpap_use",
+                "history_of_hypertension",
+                "history_of_motion_sickness",
+                "postop_nausea_smoking_history",
+            ],
+            "preop.others": [
+                "forget_prescribed_medications",
+                "no_of_prior_hospital_admissions",
+                "continence",
+            ],
+            "preop.char": [
+                "smoking_history",
+                "alcohol_consumption",
+                "pregnancy_gender",
+                "presence_of_malignancy",
+                "allergy_information",
+                "physical_general",
+                "physical_cardio",
+                "physical_respiratory",
+            ],
+            "postop.discharge": ["days_postop"],
+            "postop.info": [
+                "postop_patient_satisfaction",
+                "satisfaction_at_analgesia_removal",
+            ],
+            "postop.icu": ["resuscitation_status"],
+        },
+        "omop": "observation_concept_id",
+    }
 
     value_as_number_mapping = {
         "pasar": {"postop.info": ["postop_patient_satisfaction"]},
         "omop": "value_as_number",
     }
     # # # # EAV mapping config END # # #
+
+    observation_concept_id_specific_config = {
+        "preop.riskindex": {
+            "high_risk_op": {"use_hardcoded_value": 0},
+            "h_o_ihd": {"use_hardcoded_value": 0},
+            "h_o_chf": {"use_hardcoded_value": 0},
+            "h_o_cva": {"use_hardcoded_value": 0},
+            "dm_on_insulin": {"use_hardcoded_value": 0},
+            "hypertension": {"use_hardcoded_value": 4220915},
+            "history_of_osa": {"use_hardcoded_value": 0},
+            "loud_snoring": {"use_hardcoded_value": 35810206},
+            "daytime_tiredness": {"use_hardcoded_value": 0},
+            "apnoea": {"use_hardcoded_value": 313459},
+            "cpap_use": {"use_hardcoded_value": 0},
+            "history_of_hypertension": {"use_hardcoded_value": 0},
+            "history_of_motion_sickness": {"use_hardcoded_value": 0},
+            "postop_nausea_smoking_history": {"use_hardcoded_value": 0},
+        },
+        "preop.others": {
+            "forget_prescribed_medications": {"use_hardcoded_value": 0},
+            "no_of_prior_hospital_admissions": {"use_hardcoded_value": 0},
+            "continence": {"use_hardcoded_value": 0},
+        },
+        "preop.char": {
+            "smoking_history": {"use_hardcoded_value": 0},
+            "alcohol_consumption": {"use_hardcoded_value": 0},
+            "pregnancy_gender": {"use_hardcoded_value": 0},
+            "presence_of_malignancy": {"use_hardcoded_value": 0},
+            "allergy_information": {"use_source_to_concept_mapping": True},
+            "physical_general": {"use_hardcoded_value": 0},
+            "physical_cardio": {"use_hardcoded_value": 0},
+            "physical_respiratory": {"use_hardcoded_value": 0},
+        },
+        "postop.discharge": {"days_postop": {"use_hardcoded_value": 0}},
+        "postop.info": {
+            "postop_patient_satisfaction": {"use_hardcoded_value": 0},
+            "satisfaction_at_analgesia_removal": {"use_hardcoded_value": 0},
+        },
+        "postop.icu": {"resuscitation_status": {"use_hardcoded_value": 4127294}},
+    }
 
 
 SOURCE_TABLE_COL_NAME = "source_table"

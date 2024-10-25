@@ -1,6 +1,6 @@
 import pandas as pd
 
-from .config import SOURCE_TABLE_COL_NAME, ObservationMappingConfig, CHUNK_SIZE
+from .config import SOURCE_TABLE_COL_NAME, ObservationMappingConfig
 from .util import mapping_wrapper
 
 
@@ -47,7 +47,7 @@ class ObservationMapping():
 
     @mapping_wrapper
     def map_visit_occurrence_id(self, df: pd.DataFrame) -> pd.DataFrame:
-        # TODO: Update logic
+        # TODO: Update logic for visit_occurence_id
         visit_occurrence_id_mapping = ObservationMappingConfig.visit_occurrence_id_mapping
 
         df[visit_occurrence_id_mapping["omop"]
@@ -90,7 +90,7 @@ class ObservationMapping():
         return df[[value_as_concept_id_mapping["omop"]]]
 
     @mapping_wrapper
-    def map_eav(self, df: pd.DataFrame, source_table: str) -> pd.DataFrame:
+    def map_eav(self, df: pd.DataFrame, source_table: str, source_to_concept_map_df: pd.DataFrame) -> pd.DataFrame:
         '''Maps
         observation_concept_id
         observation_source_value
@@ -99,11 +99,12 @@ class ObservationMapping():
         value_as_string
         '''
 
-        # TODO: add observation_concept_id mapping
         value_as_string_mapping = ObservationMappingConfig.value_as_string_mapping
         observation_source_value_mapping = ObservationMappingConfig.observation_source_value_mapping
         value_source_value_mapping = ObservationMappingConfig.value_source_value_mapping
         value_as_number_mapping = ObservationMappingConfig.value_as_number_mapping
+        observation_concept_id_mapping = ObservationMappingConfig.observation_concept_id_mapping
+        observation_concept_id_specific_config = ObservationMappingConfig.observation_concept_id_specific_config
 
         mapped_df = pd.DataFrame()
         vas_table_mapping = value_as_string_mapping["pasar"].get(
@@ -114,19 +115,21 @@ class ObservationMapping():
             source_table, [])
         van_table_mapping = value_as_number_mapping["pasar"].get(
             source_table, [])
+        oci_table_mapping = observation_concept_id_mapping["pasar"].get(
+            source_table, [])
+        oci_specific_config = observation_concept_id_specific_config.get(
+            source_table, [])
 
         # Get list of all possible EAV columns
         eav_columns = list(set(
-            vas_table_mapping + osb_table_mapping + vsv_table_mapping + van_table_mapping))
+            vas_table_mapping + osb_table_mapping + vsv_table_mapping + van_table_mapping + oci_table_mapping))
 
         for eav_column in eav_columns:
             temp_df = df.copy()
 
-            # TODO: add observation_concept_id mapping logic
-            temp_df["observation_concept_id"] = 1
-
             # map value_as_string
             if eav_column in vas_table_mapping:
+                # Map to value in eav_column set in pasar config
                 temp_df[value_as_string_mapping["omop"]
                         ] = df[eav_column].astype(str)
             else:
@@ -134,6 +137,7 @@ class ObservationMapping():
 
             # map observation_source_value
             if eav_column in osb_table_mapping:
+                # Map to eav_column name set in pasar config
                 temp_df[observation_source_value_mapping["omop"]
                         ] = eav_column
             else:
@@ -141,6 +145,7 @@ class ObservationMapping():
 
             # map value_source_value
             if eav_column in vsv_table_mapping:
+                # Map to value in eav_column set in pasar config
                 temp_df[value_source_value_mapping["omop"]
                         ] = df[eav_column].astype(str)
             else:
@@ -148,13 +153,28 @@ class ObservationMapping():
 
             # map value_as_number
             if eav_column in van_table_mapping:
+                # Map to value in eav_column set in pasar config
                 temp_df[value_as_number_mapping["omop"]] = df[eav_column]
             else:
                 temp_df[value_as_number_mapping["omop"]] = None
 
-            # Remove eav_column from dataframe
-            # temp_df = temp_df.drop(labels=[eav_column], axis=1)
-            # df = df.drop(labels=[eav_column], axis=1)
+            # map observation_concept_id
+            if eav_column in oci_table_mapping:
+                oci_column_config = oci_specific_config.get(eav_column, {})
+                if oci_column_config.get("use_hardcoded_value", None) is not None:
+                    temp_df[observation_concept_id_mapping["omop"]
+                            ] = oci_column_config["use_hardcoded_value"]
+
+                if oci_column_config.get("use_source_to_concept_mapping", None) is not None:
+                    try:
+                        # Lower case eav column for mapping
+                        lowercase_mapping_series = df[eav_column].str.lower()
+                    except AttributeError:
+                        lowercase_mapping_series = df[eav_column]
+                    temp_df[observation_concept_id_mapping["omop"]
+                            ] = lowercase_mapping_series.map(source_to_concept_map_df).fillna(0)
+            else:
+                temp_df[observation_concept_id_mapping["omop"]] = 0
 
             mapped_df = pd.concat([mapped_df, temp_df], ignore_index=True)
 

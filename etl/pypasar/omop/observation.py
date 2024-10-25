@@ -15,8 +15,6 @@ logger = logging.getLogger(__name__)
 # Load environment variables from the .env file
 load_dotenv()
 
-# TODO: FIX CHILD FUNCTION AFFECTING PARENT DF
-
 
 class observation:
 
@@ -27,6 +25,7 @@ class observation:
         try:
             self.initialize()
             self.process()
+            self.generate_observation_id()
             self.finalize()
         except Exception as err:
             logger.error(f"Error occurred {self.__class__.__name__}")
@@ -50,6 +49,7 @@ class observation:
         start = time.process_time()
         omop_person_df = self.get_omop_person_table()
         allergy_concepts_df = self.get_allergy_concepts()
+        source_to_concept_map_df = self.get_source_to_concept_map()
         rowsMapped = 0
         with self.engine.connect() as connection:
             for source_table in SOURCE_TABLES:
@@ -59,7 +59,7 @@ class observation:
                     chunksize=CHUNK_SIZE
                 ):
                     mapped_df = self.mapping(
-                        chunk, omop_person_df, allergy_concepts_df, source_table, rowsMapped)
+                        chunk, omop_person_df, allergy_concepts_df, source_to_concept_map_df, source_table, rowsMapped)
 
                     self.ingest(mapped_df)
                     rowsMapped += len(mapped_df)
@@ -68,7 +68,7 @@ class observation:
             f"Total Time taken for observation processing: {time.process_time() - start:.3f}s")
         logger.info("Processing Done")
 
-    def mapping(self, df: pd.DataFrame, omop_person_df: pd.DataFrame, allergy_concepts_df: pd.DataFrame, source_table: str, rowsMapped: int) -> pd.DataFrame:
+    def mapping(self, df: pd.DataFrame, omop_person_df: pd.DataFrame, allergy_concepts_df: pd.DataFrame, source_to_concept_map_df: pd.DataFrame, source_table: str, rowsMapped: int) -> pd.DataFrame:
         '''
         # # # NO MAPPING FOR THESE COLUMNS
         # observation_datetime
@@ -122,7 +122,8 @@ class observation:
             mapped_columns.append("value_as_concept_id")
 
         # # # map_eav will map observation_concept_id, observation_source_value, value_source_value, value_as_number, value_as_string
-        df = observation_mapping.map_eav(df, source_table)
+        df = observation_mapping.map_eav(
+            df, source_table, source_to_concept_map_df)
 
         # # # observation_id
         res = observation_mapping.map_observation_id(df, rowsMapped)
@@ -147,6 +148,11 @@ class observation:
         logger.info(
             f"Total Time taken for observation ingestion: {time.process_time() - start:.3f}s")
         logger.info("Ingestion Done")
+
+    def generate_observation_id(self):
+        # TODO: Add generation of running number as observation_id after data mapping has been completed in previous step.
+        # Sorted by ascending order of session_startdate and id
+        pass
 
     def finalize(self):
         self.engine.dispose()
@@ -182,4 +188,17 @@ class observation:
                 ),
                 con=connection
             )
+            return df
+
+    def get_source_to_concept_map(self) -> pd.DataFrame:
+        with self.engine.connect() as connection:
+            # TODO: Remove distinct on, and add logic to handle mapping of duplicate source_code values to multiple rows in map_eav
+            df = pd.read_sql(
+                text(
+                    f"""select distinct on (source_code) LOWER(source_code) AS source_code, target_concept_id from {os.getenv("POSTGRES_OMOP_SCHEMA")}.source_to_concept_map ;"""
+                ),
+                con=connection
+            )
+            df = df.set_index("source_code")[
+                "target_concept_id"]
             return df
