@@ -89,9 +89,9 @@ class measurement():
 
     def initialize(self):
         # Truncate
-        with self.engine.connect() as connection:
-            with connection.begin():
-                connection.execute(text(f"Truncate table {self.omop_schema}.measurement"))
+        # with self.engine.connect() as connection:
+        #     with connection.begin():
+        #         connection.execute(text(f"Truncate table {self.omop_schema}.measurement"))
         # Create temporary concept table
         self.create_temp_concept_table()
 
@@ -114,7 +114,9 @@ class measurement():
 
     def process(self):
         for source_table_cols in self.source_tables_cols:
-            if source_table_cols["table"] in [f"{self.source_intraop_schema}.nurvitals"]:
+            # if source_table_cols["table"] not in [f"{self.source_preop_schema}.lab", 
+            #                                       f"{self.source_preop_schema}.char", 
+            #                                       f"{self.source_intraop_schema}.aimsvitals"]:
                 print(source_table_cols)
                 self.limit, self.offset = int(os.getenv("PROCESSING_BATCH_SIZE")), 0
                 self.process_by_source_table(source_table_cols)
@@ -400,11 +402,17 @@ class measurement():
             value_as_number_df = source_batch[measurement_score_columns]
             measurement_df["value_as_number"] = value_as_number_df.apply(lambda row: row.tolist(), axis=1)
             measurement_df["measurement_source_value"] = [measurement_score_columns]*len(measurement_df)
-
             measurement_df["measurement_concept_id"] = 0 # Lack of information on mapping
+            
+            # To maintain linkage between the records defined in measurement_score_columns
+            measurement_df["meas_event_field_concept_id"] = 1147330
+            measurement_df["unique_id"] = range(self.measurement_id_start, (self.measurement_id_start + len(measurement_df)))
+            measurement_df["measurement_event_id"] = measurement_df["unique_id"].apply(lambda row: [row]*len(measurement_score_columns))
+            del measurement_df["unique_id"]
+
             measurement_df["visit_occurrence_id"] = 0 # TODO: Update 
             
-            measurement_df = measurement_df.explode(['value_as_number', 'measurement_source_value'])
+            measurement_df = measurement_df.explode(['value_as_number', 'measurement_source_value', 'measurement_event_id'])
             measurement_df = measurement_df.dropna(subset=['value_as_number'], thresh=1)
             measurement_df["measurement_id"] = range(self.measurement_id_start, (self.measurement_id_start + len(measurement_df)))
             print(measurement_df.head(len(measurement_df)))
@@ -422,11 +430,17 @@ class measurement():
             value_as_source_df = source_batch[measurement_score_columns]
             measurement_df["value_source_value"] = value_as_source_df.apply(lambda row: row.tolist(), axis=1)
             measurement_df["measurement_source_value"] = [measurement_score_columns]*len(measurement_df)
-
             measurement_df["measurement_concept_id"] = 0 # Lack of information on mapping
+
+            # To maintain linkage between the records defined in measurement_score_columns
+            measurement_df["meas_event_field_concept_id"] = 1147330
+            measurement_df["unique_id"] = range(self.measurement_id_start, (self.measurement_id_start + len(measurement_df)))
+            measurement_df["measurement_event_id"] = measurement_df["unique_id"].apply(lambda row: [row]*len(measurement_score_columns))
+            del measurement_df["unique_id"]
+
             measurement_df["visit_occurrence_id"] = 0 # TODO: Update 
             
-            measurement_df = measurement_df.explode(['value_source_value', 'measurement_source_value'])
+            measurement_df = measurement_df.explode(['value_source_value', 'measurement_source_value', 'measurement_event_id'])
             measurement_df = measurement_df.dropna(subset=['value_source_value'], thresh=1)
             measurement_df["measurement_id"] = range(self.measurement_id_start, (self.measurement_id_start + len(measurement_df)))
             print(measurement_df.head(len(measurement_df)))
