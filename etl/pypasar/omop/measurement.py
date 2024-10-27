@@ -41,11 +41,6 @@ class measurement():
                                               "diastolic_bp": float, "heart_rate": float,
                                               "o2_saturation": float, "o2_supplementaries": str,
                                               "temperature": float, "pain_score": float, "person_id": int, "visit_occurrence_id": int}}, 
-                                   {"table": self.source.INTRAOP_AIMSVITALS.value, 
-                                    "columns": {"anon_case_no": str, "id": int,
-                                              "session_id": int, "vitalcode": str,
-                                              "vital_num_value": float, "vitaldt": "datetime64[ns]", 
-                                              "vital_date": "datetime64[ns]", "vital_time": str, "person_id": int, "visit_occurrence_id": int}}, 
                                    {"table": self.source.INTRAOP_OPERATION.value, 
                                     "columns": {"anon_case_no": str, "vital_code": str,
                                               "vital_signs_result": float, "vital_signs_taken_datetime": "datetime64[ns]",
@@ -76,7 +71,12 @@ class measurement():
                                               "osa_risk_index": str, "act_risk": str, "person_id": int, "visit_occurrence_id": int}}, 
                                    {"table": self.source.INTRAOP_NURVITALS.value, 
                                     "columns": {"anon_case_no": str, "id": int, "person_id": int,
-                                              "authored_datetime": "datetime64[ns]", "document_item_name": str, "value_text": str}}]
+                                              "authored_datetime": "datetime64[ns]", "document_item_name": str, "value_text": str}},
+                                   {"table": self.source.INTRAOP_AIMSVITALS.value,  # 11 million records to be ingested at the end
+                                    "columns": {"anon_case_no": str, "id": int,
+                                              "session_id": int, "vitalcode": str,
+                                              "vital_num_value": float, "vitaldt": "datetime64[ns]", 
+                                              "vital_date": "datetime64[ns]", "vital_time": str, "person_id": int, "visit_occurrence_id": int}} ]
 
     def execute(self):
         try:
@@ -114,11 +114,11 @@ class measurement():
 
     def process(self):
         for source_table_cols in self.source_tables_cols:
-            if source_table_cols["table"] not in [
-                                                #   f"{self.source_preop_schema}.lab", 
-                                                #   f"{self.source_preop_schema}.char", 
-                                                   f"{self.source_intraop_schema}.aimsvitals"
-                                                ]:
+            # if source_table_cols["table"] not in [
+            #                                     #   f"{self.source_preop_schema}.lab", 
+            #                                     #   f"{self.source_preop_schema}.char", 
+            #                                        f"{self.source_intraop_schema}.aimsvitals"
+            #                                     ]:
                 print(source_table_cols)
                 self.limit, self.offset = int(os.getenv("PROCESSING_BATCH_SIZE")), 0
                 self.process_by_source_table(source_table_cols)
