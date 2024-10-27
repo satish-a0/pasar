@@ -95,7 +95,7 @@ class condition_occurrence:
         source_batch = self.fetch_in_batch_source_postop_discharge()
         source_postop_discharge_df = pd.DataFrame(source_batch.fetchall())
         source_postop_discharge_df.columns = {'anon_case_no': str, 'id': int, 
-                                              'diagnosis_date': 'datetime64[ns]', 'diagnosis_code': str, 
+                                              'session_enddate': 'datetime64[ns]', 'diagnosis_code': str, 
                                               'diagnosis_description': str, 'session_id': int}.keys()
         print(source_postop_discharge_df.head(1))
         print(f"offset {self.offset} limit {self.limit} batch_count {len(source_postop_discharge_df)} retrieved..")
@@ -107,9 +107,6 @@ class condition_occurrence:
             'person_id': int,
             'condition_concept_id': int,
             'condition_start_date': 'datetime64[ns]',
-            'condition_start_datetime': 'datetime64[ns]',
-            'condition_end_date': 'datetime64[ns]',
-            'condition_end_datetime': 'datetime64[ns]',
             'condition_type_concept_id': int,
             'condition_status_concept_id': int,
             'visit_occurrence_id': int,
@@ -120,8 +117,7 @@ class condition_occurrence:
         print(f"source {len(source_batch)}")
         
         if len(source_batch) > 0:
-            condition_occ_df['condition_start_date'] = pd.to_datetime(source_batch['diagnosis_date']).dt.date
-            condition_occ_df['condition_start_datetime'] = source_batch['diagnosis_date']
+            condition_occ_df['condition_start_date'] = pd.to_datetime(source_batch['session_enddate'])
             condition_occ_df['condition_type_concept_id'] = 32879
             condition_occ_df['condition_status_concept_id'] = 32896
             condition_occ_df['condition_concept_id'] = 0 # TODO: Update
@@ -150,7 +146,6 @@ class condition_occurrence:
                                             condition_type_concept_id,
                                             condition_status_concept_id,
                                             condition_start_date,
-                                            condition_start_datetime,
                                             visit_occurrence_id,
                                             condition_source_value
                                         )
@@ -161,7 +156,6 @@ class condition_occurrence:
                                                 t.condition_type_concept_id,
                                                 t.condition_status_concept_id,
                                                 t.condition_start_date,
-                                                t.condition_start_datetime,
                                                 v.visit_occurrence_id,
                                                 CONCAT(t.condition_source_value, '-', t.condition_source_description) AS condition_source_value
                                             FROM { self.temp_table } t
@@ -199,7 +193,7 @@ class condition_occurrence:
         with self.engine.connect() as connection:
             with connection.begin():
                 res = connection.execute(
-                    text(f'select anon_case_no, id, diagnosis_date, diagnosis_code, diagnosis_description, session_id from {self.source_postop_schema}.discharge limit {self.limit} offset {self.offset}'))
+                    text(f'select anon_case_no, id, session_enddate, diagnosis_code, diagnosis_description, session_id from {self.source_postop_schema}.discharge limit {self.limit} offset {self.offset}'))
                 return res
 
     def truncate_table(self, table_name_w_schema_prefix):
