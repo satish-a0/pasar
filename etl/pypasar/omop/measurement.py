@@ -33,49 +33,49 @@ class measurement():
                                     "columns": {"anon_case_no": str, "id": int,
                                               "session_id": int, "preop_lab_test_description": str,
                                               "preop_lab_result_value": float, 
-                                              "preop_lab_collection_datetime": "datetime64[ns]", "person_id": str}},
+                                              "preop_lab_collection_datetime": "datetime64[ns]", "person_id": int, "visit_occurrence_id": int}},
                                    {"table": self.source.PREOP_CHAR.value, 
                                     "columns": {"anon_case_no": str, "id": int,
                                               "session_id": int, "session_startdate": "datetime64[ns]",
                                               "height": float, "weight": float, "bmi": float, "systolic_bp": float,
                                               "diastolic_bp": float, "heart_rate": float,
                                               "o2_saturation": float, "o2_supplementaries": str,
-                                              "temperature": float, "pain_score": float, "person_id": str}}, 
+                                              "temperature": float, "pain_score": float, "person_id": int, "visit_occurrence_id": int}}, 
                                    {"table": self.source.INTRAOP_AIMSVITALS.value, 
                                     "columns": {"anon_case_no": str, "id": int,
                                               "session_id": int, "vitalcode": str,
                                               "vital_num_value": float, "vitaldt": "datetime64[ns]", 
-                                              "vital_date": "datetime64[ns]", "vital_time": str, "person_id": str}}, 
+                                              "vital_date": "datetime64[ns]", "vital_time": str, "person_id": int, "visit_occurrence_id": int}}, 
                                    {"table": self.source.INTRAOP_OPERATION.value, 
                                     "columns": {"anon_case_no": str, "vital_code": str,
                                               "vital_signs_result": float, "vital_signs_taken_datetime": "datetime64[ns]",
                                               "vital_signs_taken_date": "datetime64[ns]", 
-                                              "vital_signs_taken_time": str, "person_id": str}}, 
+                                              "vital_signs_taken_time": str, "person_id": int, "visit_occurrence_id": int}}, 
                                    {"table": self.source.POSTOP_LAB.value, 
                                     "columns": {"anon_case_no": str, "id": int,
                                               "session_id": int, 
                                               "postop_lab_collection_datetime_max": "datetime64[ns]",
                                               "postop_lab_collection_datetime_min": "datetime64[ns]", 
-                                              "postop_lab_test_desc": str, "person_id": str,
+                                              "postop_lab_test_desc": str, "person_id": int, "visit_occurrence_id": int,
                                               "postop_result_value_max": float, "postop_result_value_min": float}}, 
                                    {"table": self.source.POSTOP_LABSALL.value, 
                                     "columns": {"anon_case_no": str, "id": int,
                                               "session_id": int, "gen_lab_lab_test_code": str,
                                               "gen_lab_result_value": str, "gen_lab_specimen_collection_date": "datetime64[ns]",
-                                              "gen_lab_specimen_collection_time": str, "person_id": str}},
+                                              "gen_lab_specimen_collection_time": str, "person_id": int, "visit_occurrence_id": int}},
                                    {"table": self.source.PREOP_OTHERS.value, 
                                     "columns": {"anon_case_no": str, "id": int,
                                               "session_id": int, "session_startdate": "datetime64[ns]",
                                               "asa_score_aims": float, "asa_score_eaf": str,
-                                              "efs_total_score": int, "person_id": str}}, 
+                                              "efs_total_score": int, "person_id": int, "visit_occurrence_id": int}}, 
                                    {"table": self.source.PREOP_RISKINDEX.value, 
                                     "columns": {"anon_case_no": str, "id": int,
                                               "session_id": int, "session_startdate": "datetime64[ns]",
                                               "asa_class": str, "cri_functional_status": str,
                                               "cardiac_risk_index": float, "cardiac_risk_class": str,
-                                              "osa_risk_index": str, "act_risk": str, "person_id": str}}, 
+                                              "osa_risk_index": str, "act_risk": str, "person_id": int, "visit_occurrence_id": int}}, 
                                    {"table": self.source.INTRAOP_NURVITALS.value, 
-                                    "columns": {"anon_case_no": str, "id": int, "person_id": str,
+                                    "columns": {"anon_case_no": str, "id": int, "person_id": int,
                                               "authored_datetime": "datetime64[ns]", "document_item_name": str, "value_text": str}}]
 
     def execute(self):
@@ -88,10 +88,10 @@ class measurement():
             raise err
 
     def initialize(self):
-        # Truncate
-        # with self.engine.connect() as connection:
-        #     with connection.begin():
-        #         connection.execute(text(f"Truncate table {self.omop_schema}.measurement"))
+        #Truncate
+        with self.engine.connect() as connection:
+            with connection.begin():
+                connection.execute(text(f"Truncate table {self.omop_schema}.measurement"))
         # Create temporary concept table
         self.create_temp_concept_table()
 
@@ -114,9 +114,11 @@ class measurement():
 
     def process(self):
         for source_table_cols in self.source_tables_cols:
-            # if source_table_cols["table"] not in [f"{self.source_preop_schema}.lab", 
-            #                                       f"{self.source_preop_schema}.char", 
-            #                                       f"{self.source_intraop_schema}.aimsvitals"]:
+            if source_table_cols["table"] not in [
+                                                #   f"{self.source_preop_schema}.lab", 
+                                                #   f"{self.source_preop_schema}.char", 
+                                                   f"{self.source_intraop_schema}.aimsvitals"
+                                                ]:
                 print(source_table_cols)
                 self.limit, self.offset = int(os.getenv("PROCESSING_BATCH_SIZE")), 0
                 self.process_by_source_table(source_table_cols)
@@ -164,8 +166,30 @@ class measurement():
                 select_sql += f"{col}"
         
         # Inner join with OMOP Person table
-        select_sql += f''' FROM {source_table_cols['table']} 
+        select_sql += f''' FROM {source_table_cols['table']}
                            INNER JOIN {self.omop_schema}.person ON anon_case_no = person_source_value'''
+
+        # Inner join with OMOP Visit_occurrence table
+        if "visit_occurrence_id" in source_columns:
+            select_sql += f''' INNER JOIN (
+                                            SELECT visit_occurrence_id,
+                                                row_number() over (
+                                                    partition by CAST(
+                                                        LEFT(
+                                                            CAST(visit_occurrence_id AS TEXT),
+                                                            LENGTH(CAST(visit_occurrence_id AS TEXT)) - 2
+                                                        ) AS INTEGER
+                                                    )
+                                                ) rownum,
+                                                CAST(
+                                                    LEFT(
+                                                        CAST(visit_occurrence_id AS TEXT),
+                                                        LENGTH(CAST(visit_occurrence_id AS TEXT)) - 2
+                                                    ) AS INTEGER
+                                                ) AS truncated_visit_occurrence_id
+                                            FROM VISIT_OCCURRENCE
+                                        ) v ON v.truncated_visit_occurrence_id = session_id
+                                        AND v.rownum = 1'''
         
         select_sql += f" order by anon_case_no LIMIT {self.limit} OFFSET {self.offset}"
         # select_sql += f" order by anon_case_no LIMIT 2"
@@ -235,7 +259,7 @@ class measurement():
             measurement_df.fillna({"measurement_concept_id": 0}, inplace=True) # For those missing standard concept mapping
             measurement_df.drop(['source_code', 'target_concept_id'], axis=1, inplace=True)
             
-            measurement_df["visit_occurrence_id"] = 0 # TODO: Update
+            measurement_df["visit_occurrence_id"] = source_batch["visit_occurrence_id"]
             measurement_df["measurement_id"] = range(self.measurement_id_start, (self.measurement_id_start + len(measurement_df)))
 
 
@@ -268,7 +292,7 @@ class measurement():
             measurement_df["measurement_event_id"] = measurement_df["unique_id"].apply(lambda row: [row]*len(measurement_score_columns))
             del measurement_df["unique_id"]
 
-            measurement_df["visit_occurrence_id"] = 0 # TODO: Update 
+            measurement_df["visit_occurrence_id"] = source_batch["visit_occurrence_id"] 
 
             # Transpose magic happens
             measurement_df = measurement_df.explode(['value_as_number', 'measurement_source_value', 'measurement_concept_id', 'measurement_event_id'])
@@ -299,7 +323,7 @@ class measurement():
             measurement_df.fillna({"measurement_concept_id": 0}, inplace=True) # For those missing standard concept mapping
             measurement_df.drop(['source_code', 'target_concept_id'], axis=1, inplace=True)
             
-            measurement_df["visit_occurrence_id"] = 0 # TODO: Update
+            measurement_df["visit_occurrence_id"] = source_batch["visit_occurrence_id"]
             measurement_df["measurement_id"] = range(self.measurement_id_start, (self.measurement_id_start + len(measurement_df)))
 
         # print(measurement_df.head(1))
@@ -326,7 +350,7 @@ class measurement():
             measurement_df.fillna({"measurement_concept_id": 0}, inplace=True) # For those missing standard concept mapping
             measurement_df.drop(['source_code', 'target_concept_id'], axis=1, inplace=True)            
             
-            measurement_df["visit_occurrence_id"] = 0 # TODO: Update
+            measurement_df["visit_occurrence_id"] = source_batch["visit_occurrence_id"]
             measurement_df["measurement_id"] = range(self.measurement_id_start, (self.measurement_id_start + len(measurement_df)))
 
         print(measurement_df.head(1))
@@ -355,7 +379,7 @@ class measurement():
             measurement_df.fillna({"measurement_concept_id": 0}, inplace=True) # For those missing standard concept mapping
             measurement_df.drop(['source_code', 'target_concept_id'], axis=1, inplace=True)         
 
-            measurement_df["visit_occurrence_id"] = 0 # TODO: Update
+            measurement_df["visit_occurrence_id"] = source_batch["visit_occurrence_id"]
             measurement_df["measurement_id"] = range(self.measurement_id_start, (self.measurement_id_start + len(measurement_df)))
 
         print(measurement_df.head(1))
@@ -384,7 +408,7 @@ class measurement():
             measurement_df.fillna({"measurement_concept_id": 0}, inplace=True) # For those missing standard concept mapping
             measurement_df.drop(['source_code', 'target_concept_id'], axis=1, inplace=True)
             
-            measurement_df["visit_occurrence_id"] = 0 # TODO: Update
+            measurement_df["visit_occurrence_id"] = source_batch["visit_occurrence_id"]
             measurement_df["measurement_id"] = range(self.measurement_id_start, (self.measurement_id_start + len(measurement_df)))
 
         print(measurement_df.head(1))
@@ -410,7 +434,7 @@ class measurement():
             measurement_df["measurement_event_id"] = measurement_df["unique_id"].apply(lambda row: [row]*len(measurement_score_columns))
             del measurement_df["unique_id"]
 
-            measurement_df["visit_occurrence_id"] = 0 # TODO: Update 
+            measurement_df["visit_occurrence_id"] = source_batch["visit_occurrence_id"]
             
             measurement_df = measurement_df.explode(['value_as_number', 'measurement_source_value', 'measurement_event_id'])
             measurement_df = measurement_df.dropna(subset=['value_as_number'], thresh=1)
@@ -438,7 +462,7 @@ class measurement():
             measurement_df["measurement_event_id"] = measurement_df["unique_id"].apply(lambda row: [row]*len(measurement_score_columns))
             del measurement_df["unique_id"]
 
-            measurement_df["visit_occurrence_id"] = 0 # TODO: Update 
+            measurement_df["visit_occurrence_id"] = source_batch["visit_occurrence_id"] 
             
             measurement_df = measurement_df.explode(['value_source_value', 'measurement_source_value', 'measurement_event_id'])
             measurement_df = measurement_df.dropna(subset=['value_source_value'], thresh=1)
@@ -467,7 +491,7 @@ class measurement():
             measurement_df.fillna({"measurement_concept_id": 0}, inplace=True) # For those missing standard concept mapping
             measurement_df.drop(['source_code', 'target_concept_id'], axis=1, inplace=True)
             
-            measurement_df["visit_occurrence_id"] = 0 # TODO: Update
+            measurement_df["visit_occurrence_id"] = None # There's no session_id involved with source table
             measurement_df["measurement_id"] = range(self.measurement_id_start, (self.measurement_id_start + len(measurement_df)))
 
         print(measurement_df.head(1))
