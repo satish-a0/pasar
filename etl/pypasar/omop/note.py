@@ -56,7 +56,7 @@ class note:
                                     ROW_NUMBER() OVER (
                                         PARTITION BY anon_case_no, session_id, session_enddate, postop_clindoc_item_description
                                         ORDER BY id
-                                    ) AS row_num      --Any rows that are duplicate with show 1,2,...
+                                    ) AS row_num      --Any rows duplicate will show row num of more than 1
                                 FROM postop.clindoc
                             ),
 
@@ -120,7 +120,7 @@ class note:
                             note_id,
                             person_id,
                             note_date,
-                            (note_date::text || ' 00:00:00')::timestamp AS note_datetime, -- the function used to take date and join to midnight
+                            (note_date::text || ' 00:00:00')::timestamp AS note_datetime, -- Function used to take date and join to midnight
                             32879 AS note_type_concept_id,
                             0 AS note_class_concept_id,  -- Put 0 as source_to_concept not found
                             note_title,
