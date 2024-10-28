@@ -10,7 +10,12 @@
 
 -- Create the staging view for the procedure_occurrence table, assigning a unique procedure_occurrence_id
 CREATE OR REPLACE VIEW {OMOP_SCHEMA}.stg__procedure_occurrence AS 
-    WITH intra_op__operation AS (
+    -- Convert visit_occurrence_id back to session_id
+    WITH sessionIDs AS (
+        SELECT CAST(LEFT(CAST(visit_occurrence_id AS TEXT), LENGTH(CAST(visit_occurrence_id AS TEXT)) - 2) AS INTEGER) AS session_id, *
+        FROM {OMOP_SCHEMA}.visit_occurrence
+    ), 
+    intra_op__operation AS (
         SELECT ROW_NUMBER() OVER (ORDER BY procedure_date asc) AS procedure_occurence_id, temp.*
         FROM (
             SELECT DISTINCT
@@ -24,7 +29,7 @@ CREATE OR REPLACE VIEW {OMOP_SCHEMA}.stg__procedure_occurrence AS
                 0 AS modifier_concept_id,
                 0 AS quantity,
                 provider.provider_id AS provider_id,
-                operation.session_id AS visit_occurrence_id,
+                vo.visit_occurrence_id AS visit_occurrence_id,
                 0 AS visit_detail_id,
                 operation.procedure_code AS procedure_source_value,
                 0 AS procedure_source_concept_id, -- Need concept id mapping
@@ -32,7 +37,10 @@ CREATE OR REPLACE VIEW {OMOP_SCHEMA}.stg__procedure_occurrence AS
             FROM {INTRAOP_SCHEMA}.operation AS operation
             JOIN {OMOP_SCHEMA}.person AS person on person.person_source_value = operation.anon_case_no
             LEFT JOIN {OMOP_SCHEMA}.provider AS provider on
-            (provider.provider_source_value = operation.anon_surgeon_name or provider.provider_source_value = operation.anon_plan_anaesthetist_1_name or provider.provider_source_value = operation.anon_plan_anaesthetist_2_name) 
+            (provider.provider_source_value = operation.anon_surgeon_name or provider.provider_source_value = operation.anon_plan_anaesthetist_1_name or provider.provider_source_value = operation.anon_plan_anaesthetist_2_name)
+            -- Join with the Visit_occurrence table
+            LEFT JOIN sessionIDs AS vo
+                ON operation.session_id = vo.session_id
         ) AS temp
     ),
     post_op__renal AS (
@@ -96,13 +104,16 @@ CREATE OR REPLACE VIEW {OMOP_SCHEMA}.stg__procedure_occurrence AS
                         0 AS modifier_concept_id,
                         0 AS quantity,
                         CAST(NULL as INTEGER) AS provider_id,
-                        radiology.session_id AS visit_occurrence_id,
+                        vo.visit_occurrence_id AS visit_occurrence_id,
                         0 AS visit_detail_id,
                         procedure_name AS procedure_source_value,
                         0 AS procedure_source_concept_id, -- Need concept id mapping
                         NULL AS modifier_source_value
                 FROM {PREOP_SCHEMA}.radiology AS radiology
                 JOIN {OMOP_SCHEMA}.person AS person ON person.person_source_value = radiology.anon_case_no
+                -- Join with the Visit_occurrence table
+                LEFT JOIN sessionIDs AS vo
+                    ON radiology.session_id = vo.session_id
             ) AS temp
     ),
     final AS (
