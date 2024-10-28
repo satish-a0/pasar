@@ -10,13 +10,25 @@
 - Specific Git Commit: https://github.com/OHDSI/CommonDataModel/commit/c1c8e6a4f04e588d72fa9ae5df56b1631559548b
 - Copied files to `etl/db` and removed prefix `@cdmDatabaseSchema.` in those files (since ingestion will happen via SqlAlchemy)
 
-## Analysis
+## Data Analysis
 
-https://ohdsiorg.sharepoint.com/:x:/s/OHDSIAPAC-2024APACETLProject-Dataanalysis/EZWK6NCPUFtJpEOU54YmemcBp-B4JIk1Er_T7cDZApXVJQ?e=N32f6C&wdOrigin=TEAMS-MAGLEV.teams_ns.rwc&wdExp=TEAMS-TREATMENT&wdhostclicktime=1722821798159&web=1
+- Releases from DA To ETL Team: https://github.com/sidataplus/PASAR_ETL_Spec
+
+- Working Sheet: https://ohdsiorg.sharepoint.com/:x:/r/sites/OHDSIAPAC/_layouts/15/Doc2.aspx?action=edit&sourcedoc=%7B5aa99f90-c21c-4ce4-8edf-70b99dfa0ab4%7D&wdOrigin=TEAMS-MAGLEV.teamsSdk_ns.rwc&wdExp=TEAMS-TREATMENT&wdhostclicktime=1724247157445&web=1
 
 ## Vocabulary Mapping
 
+- Tracking uploads: https://github.com/satish-a0/pasar/pull/21
+
 ## ETL
+
+- Working Sheet: https://ohdsiorg.sharepoint.com/:x:/s/OHDSIAPAC/ERctK2EQDGlDg4yh79imNpkBfMY4Rg7IhA0lKfYmCpz1tg?e=fPzMTS&nav=MTVfe0VGMUNGNjA1LUZDNDgtNDMzNy05RDg4LTJGMTBCRTIxRDkyQn0
+- Timelines: https://ohdsiorg.sharepoint.com/:x:/s/OHDSIAPAC/EctGt_SfFWlErKJWLO3xXp4Bsnh4tYu5sVFl2de1TOHq2w?e=ICTq4g&nav=MTVfezExMDFDNDc5LUNCNzEtNDA1MC1BOTkzLTc1NDgxQTFBNzlFNH0
+
+## Quality Assurance
+
+- Results: https://github.com/SantanM/qa-pasar/
+- Working Sheet: https://ohdsiorg.sharepoint.com/:x:/s/OHDSIAPAC/ERctK2EQDGlDg4yh79imNpkBfMY4Rg7IhA0lKfYmCpz1tg?e=t8dmaj&nav=MTVfezA0MERGRkQxLTZCRTItNDkwRC1CMTEwLTE3NTE2QjY0OEFGM30
 
 ### Pre-requisites
 - bash
@@ -130,3 +142,7 @@ git config user.email <email>
 ```
 
 4. Follow the document in step 1 to create a new branch and push to repo.
+
+### Setup Postgres GUI on Vscode GCP VM
+1. How to browse and Install VS Code extensions: https://code.visualstudio.com/docs/editor/extension-marketplace#_browse-for-extensions
+2. Recommended Postgres GUI extension: https://marketplace.visualstudio.com/items?itemName=ckolkman.vscode-postgres
