@@ -36,7 +36,6 @@ class note:
     def process(self):
         # Set SCHEMA
         omop_schema = os.getenv("POSTGRES_OMOP_SCHEMA")
-        # source_schema = os.getenv("POSTGRES_SOURCE_SCHEMA")
 
         with self.engine.connect() as connection:
             with connection.begin():
@@ -50,12 +49,12 @@ class note:
                                     id,
                                     anon_case_no,
                                     session_id,
-                                    postop_clindoc_created_datetime,
+                                    session_enddate,
                                     postop_clindoc_item_name,
                                     postop_clindoc_item_description,
                                     postop_clindoc_value_text,
                                     ROW_NUMBER() OVER (
-                                        PARTITION BY anon_case_no, session_id, postop_clindoc_created_datetime, postop_clindoc_item_description
+                                        PARTITION BY anon_case_no, session_id, session_enddate, postop_clindoc_item_description
                                         ORDER BY id
                                     ) AS row_num      --Any rows that are duplicate with show 1,2,...
                                 FROM postop.clindoc
@@ -73,17 +72,16 @@ class note:
                             )
 
                             SELECT
-                                ROW_NUMBER() OVER (ORDER BY clindoc.postop_clindoc_created_datetime, id) AS note_id,
+                                ROW_NUMBER() OVER (ORDER BY session_enddate, id) AS note_id,
                                 CDM_PER.person_id AS person_id,
-                                CAST(clindoc.postop_clindoc_created_datetime AS date) AS note_date, -- get date only
-                                clindoc.postop_clindoc_created_datetime AS note_datetime,
+                                session_enddate AS note_date, -- get date only
                                 clindoc.postop_clindoc_item_name AS note_title,
 
                             -- Handle any null values in note text
                             CASE
                                 WHEN clindoc.postop_clindoc_value_text IS NOT NULL 
                                 THEN clindoc.postop_clindoc_value_text
-                                ELSE '0'
+                                ELSE 'NULL'
                             END AS note_text,
 
                                 CDM_VisitOcc.visit_occurrence_id AS visit_occurrence_id,
@@ -122,7 +120,7 @@ class note:
                             note_id,
                             person_id,
                             note_date,
-                            note_datetime,
+                            (note_date::text || ' 00:00:00')::timestamp AS note_datetime, -- the function used to take date and join to midnight
                             32879 AS note_type_concept_id,
                             0 AS note_class_concept_id,  -- Put 0 temporary as source_to_concept not included
                             note_title,
