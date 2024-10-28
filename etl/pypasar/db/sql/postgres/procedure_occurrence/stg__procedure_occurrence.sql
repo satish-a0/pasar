@@ -20,7 +20,9 @@ CREATE OR REPLACE VIEW {OMOP_SCHEMA}.stg__procedure_occurrence AS
         FROM (
             SELECT DISTINCT
                 person.person_id,
-                0 AS procedure_concept_id, -- Need concept id mapping
+                CASE WHEN stcm.target_concept_id IS NULL THEN 0
+                ELSE stcm.target_concept_id
+                END AS procedure_concept_id,
                 operation.operation_startdate AS procedure_date,
                 CONCAT(operation.operation_startdate, ' ', operation.operation_starttime) ::timestamp AS procedure_datetime,
                 operation.operation_enddate AS procedure_end_date,
@@ -32,15 +34,21 @@ CREATE OR REPLACE VIEW {OMOP_SCHEMA}.stg__procedure_occurrence AS
                 vo.visit_occurrence_id AS visit_occurrence_id,
                 0 AS visit_detail_id,
                 operation.procedure_code AS procedure_source_value,
-                0 AS procedure_source_concept_id, -- Need concept id mapping
+                CASE WHEN stcm.target_concept_id IS NULL THEN 0
+                ELSE stcm.target_concept_id
+                END AS procedure_source_concept_id,
                 NULL AS modifier_source_value
             FROM {INTRAOP_SCHEMA}.operation AS operation
-            JOIN {OMOP_SCHEMA}.person AS person on person.person_source_value = operation.anon_case_no
-            LEFT JOIN {OMOP_SCHEMA}.provider AS provider on
+            JOIN {OMOP_SCHEMA}.person AS person 
+                ON person.person_source_value = operation.anon_case_no
+            LEFT JOIN {OMOP_SCHEMA}.provider AS provider 
+                ON
             (provider.provider_source_value = operation.anon_surgeon_name or provider.provider_source_value = operation.anon_plan_anaesthetist_1_name or provider.provider_source_value = operation.anon_plan_anaesthetist_2_name)
             -- Join with the Visit_occurrence table
             LEFT JOIN sessionIDs AS vo
                 ON operation.session_id = vo.session_id
+            LEFT JOIN {OMOP_SCHEMA}.source_to_concept_map AS stcm
+                ON operation.procedure_code = stcm.source_code
         ) AS temp
     ),
     post_op__renal AS (
@@ -66,7 +74,8 @@ CREATE OR REPLACE VIEW {OMOP_SCHEMA}.stg__procedure_occurrence AS
                 CASE 
                     WHEN crrt_type = 'CVVHDF - Continuous Veno-Venous Hemodiafiltration' THEN 4049846
                     WHEN crrt_type = 'CVVHD - Continuous Veno-Venous Hemodialysis' THEN 4051329 
-                    ELSE 0 
+                    WHEN stcm.target_concept_id IS NULL THEN 0
+                    ELSE stcm.target_concept_id
                 END AS procedure_concept_id,
                 renal.crrt_authored_date AS procedure_date,
                 renal.dialysis_starttime AS dialysis_starttime,
@@ -83,11 +92,15 @@ CREATE OR REPLACE VIEW {OMOP_SCHEMA}.stg__procedure_occurrence AS
                 CASE 
                     WHEN crrt_type = 'CVVHDF - Continuous Veno-Venous Hemodiafiltration' THEN 4049846
                     WHEN crrt_type = 'CVVHD - Continuous Veno-Venous Hemodialysis' THEN 4051329 
-                    ELSE 0 
+                    WHEN stcm.target_concept_id IS NULL THEN 0
+                    ELSE stcm.target_concept_id
                 END AS procedure_source_concept_id,
                 NULL AS modifier_source_value
             FROM {POSTOP_SCHEMA}.renal AS renal
-            JOIN {OMOP_SCHEMA}.person AS person ON person.person_source_value = renal.anon_case_no
+            JOIN {OMOP_SCHEMA}.person AS person 
+                ON person.person_source_value = renal.anon_case_no
+            LEFT JOIN {OMOP_SCHEMA}.source_to_concept_map AS stcm
+                ON renal.crrt_type = stcm.source_code
         ) AS temp
     ),
     pre_op__radiology AS (
@@ -95,7 +108,9 @@ CREATE OR REPLACE VIEW {OMOP_SCHEMA}.stg__procedure_occurrence AS
             FROM(
                 SELECT  DISTINCT
                         person.person_id,
-                        0 AS procedure_concept_id, -- Need concept id mapping
+                        CASE WHEN stcm.target_concept_id IS NULL THEN 0
+                        ELSE stcm.target_concept_id
+                        END AS procedure_concept_id,
                         operation_startdate AS procedure_date,
                         CONCAT(operation_startdate, ' ', operation_starttime) ::timestamp AS procedure_datetime,
                         operation_enddate AS procedure_end_date,
@@ -107,13 +122,18 @@ CREATE OR REPLACE VIEW {OMOP_SCHEMA}.stg__procedure_occurrence AS
                         vo.visit_occurrence_id AS visit_occurrence_id,
                         0 AS visit_detail_id,
                         procedure_name AS procedure_source_value,
-                        0 AS procedure_source_concept_id, -- Need concept id mapping
+                        CASE WHEN stcm.target_concept_id IS NULL THEN 0
+                        ELSE stcm.target_concept_id
+                        END AS procedure_source_concept_id,
                         NULL AS modifier_source_value
                 FROM {PREOP_SCHEMA}.radiology AS radiology
-                JOIN {OMOP_SCHEMA}.person AS person ON person.person_source_value = radiology.anon_case_no
+                JOIN {OMOP_SCHEMA}.person AS person
+                     ON person.person_source_value = radiology.anon_case_no
                 -- Join with the Visit_occurrence table
                 LEFT JOIN sessionIDs AS vo
                     ON radiology.session_id = vo.session_id
+                LEFT JOIN {OMOP_SCHEMA}.source_to_concept_map AS stcm
+                    ON radiology.procedure_name = stcm.source_code
             ) AS temp
     ),
     final AS (
