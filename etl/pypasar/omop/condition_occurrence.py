@@ -43,38 +43,60 @@ class condition_occurrence:
                 # This is used to map the non-standard source concept codes -> non-standard concept ids -> standard concept ids
                 connection.execute(text(f'''CREATE TEMPORARY TABLE { self.temp_concept_table } AS
                                 select *
-                                from (
-                                        select sc.diagnosis_code as condition_source_value,
-                                            sc.concept_id as source_concept_id,
-                                            cr.concept_id_2 as target_concept_id,
-                                            cr.relationship_id,
-                                            ROW_NUMBER() OVER(
-                                                PARTITION BY sc.diagnosis_code
-                                                ORDER BY sc.diagnosis_code,
-                                                    cr.concept_id_1,
-                                                    cr.valid_start_date asc,
-                                                    cr.valid_end_date desc
-                                            ) rownum
                                         from (
-                                                select distinct(p.diagnosis_code),
-                                                    c.*
-                                                from { self.source_postop_schema }.discharge p
+                                                select sc.diagnosis_code as condition_source_value,
+                                                    sc.concept_id as source_concept_id,
+                                                    COALESCE(cr.concept_id_2, 0) as target_concept_id,
+                                                    cr.relationship_id,
+                                                    ROW_NUMBER() OVER(
+                                                        PARTITION BY sc.diagnosis_code
+                                                        ORDER BY sc.diagnosis_code,
+                                                            cr.concept_id_1,
+                                                            cr.valid_start_date asc,
+                                                            cr.valid_end_date desc
+                                                    ) rownum
+                                                from (
+                                                        (
+                                                            select distinct(p.diagnosis_code),
+                                                                c.concept_id
+                                                            from {self.source_postop_schema}.discharge p
+                                                                left join (
+                                                                    select *
+                                                                    from {self.omop_schema}.concept
+                                                                    where invalid_reason is null
+                                                                ) c on p.diagnosis_code = c.concept_code
+                                                            where p.diagnosis_code SIMILAR TO '[A-Z]%'
+                                                            order by p.diagnosis_code
+                                                        )
+                                                        UNION
+                                                        (
+                                                            select p.diagnosis_code,
+                                                                c.concept_id
+                                                            from (
+                                                                    select concat(
+                                                                            substring(diagnosis_code, 1, 3),
+                                                                            '.',
+                                                                            substring(diagnosis_code, 4)
+                                                                        ) as diagnosis_code
+                                                                    from {self.source_postop_schema}.discharge
+                                                                    where diagnosis_code SIMILAR TO '[A-Z]%'
+                                                                ) p
+                                                                left join (
+                                                                    select *
+                                                                    from {self.omop_schema}.concept
+                                                                    where invalid_reason is null
+                                                                ) c on p.diagnosis_code = c.concept_code
+                                                            order by p.diagnosis_code
+                                                        )
+                                                    ) sc
                                                     left join (
                                                         select *
-                                                        from { self.omop_schema }.concept
-                                                        where domain_id = 'Condition'
+                                                        from {self.omop_schema}.concept_relationship
+                                                        where relationship_id = 'Maps to'
                                                             and invalid_reason is null
-                                                    ) c on p.diagnosis_code = c.concept_code
-                                                order by p.diagnosis_code
-                                            ) sc
-                                            left join (
-                                                    select *
-                                                from { self.omop_schema }.concept_relationship
-                                                where relationship_id = 'Maps to'
-                                                    and invalid_reason is null
-                                            ) cr on sc.concept_id = cr.concept_id_1
-                                    ) final_scm
-                                where rownum = 1''' 
+                                                    ) cr on sc.concept_id = cr.concept_id_1
+                                            ) final_scm
+                                        where rownum = 1''' 
                                     )
                                 )
 
