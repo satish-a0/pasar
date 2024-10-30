@@ -36,7 +36,6 @@ class note:
     def process(self):
         # Set SCHEMA
         omop_schema = os.getenv("POSTGRES_OMOP_SCHEMA")
-        omop_schema = os.getenv("POSTGRES_OMOP_SCHEMA")
 
         with self.engine.connect() as connection:
             with connection.begin():
