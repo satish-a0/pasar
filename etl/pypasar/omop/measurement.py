@@ -29,6 +29,7 @@ class measurement():
         self.source_postop_schema = os.getenv("POSTGRES_SOURCE_POSTOP_SCHEMA")
         self.temp_concept_table = f'temp_concept_measurement_{os.urandom(15).hex()}'
         self.measurement_id_start = 1
+        self.measurement_aimsvitals_fetch_limit = os.getenv("OMOP_MEASUREMENT_INTRAOP_AIMSVITALS_FETCH_LIMIT", 0)
         self.source_tables_cols = [{"table": self.source.PREOP_LAB.value, 
                                     "columns": {"anon_case_no": str, "id": int,
                                               "session_id": int, "preop_lab_test_description": str,
@@ -142,10 +143,18 @@ class measurement():
 
 
     def fetch_total_count_source_table(self, source_table_name):
+        source_total_table_count = 0 
         with self.engine.connect() as connection:
             with connection.begin():
                 res = connection.execute(text(f"select count(1) from {source_table_name}"))
-                return res.first()[0]
+                source_total_table_count = res.first()[0]
+
+        # This is a special case to control how much source data is ingested from intraop aimsvitals table since it takes a few days to complete
+        if source_table_name == self.source.INTRAOP_AIMSVITALS.value:
+            if self.measurement_aimsvitals_fetch_limit > 0:
+                source_total_table_count = self.measurement_aimsvitals_fetch_limit # Overrides the actual total count
+
+        return source_total_table_count
 
     def retrieve(self, source_table_cols):
         source_batch = self.fetch_in_batch_source_table(source_table_cols)
