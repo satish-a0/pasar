@@ -10,8 +10,8 @@ with combined as (
 	select * from {OMOP_SCHEMA}.{DRUGMED_STCM_VIEW} -- 17140 records
 	union all
 	select * from {OMOP_SCHEMA}.{DRUGDRUG_STCM_VIEW} -- 2344 records
-	-- union all
-	-- select * from {OMOP_SCHEMA}.temp_drug_fluids_view
+	union all
+	select * from {OMOP_SCHEMA}.{DRUGFLUIDS_STCM_VIEW}-- 6505 records
 )
 
 select
@@ -25,10 +25,12 @@ select
 	32879 as "drug_type_concept_id", -- source is registry
 	combined.quantity as "quantity",
 	case when combined.source_schema = 'intraop' then 1 else 0 end as "days_supply",
+	vo.visit_occurrence_id as "visit_occurrence_id",
 	combined.drug_source_value as "drug_source_value"
 from combined
+
 left join {OMOP_SCHEMA}.person p
 on p.person_source_value = combined.anon_case_no
 
---left join {OMOP_SCHEMA}.visit_occurrence vo
--- on...
+left join {OMOP_SCHEMA}.visit_occurrence vo
+on combined.session_id = (left(vo.visit_occurrence_id::text, length(visit_occurrence_id::text) - 2))::int

@@ -14,6 +14,7 @@ class drug_exposure:
         self.engine = postgres().get_engine()  # Get PG Connection
         self.drugdrug_view = "temp_drugdrug_view"
         self.drugmed_view = "temp_drugmed_view"
+        self.drugfluids_view = "temp_drugfluids_view"
         self.drug_exposure_stg_view = "stg__drug_exposure"
         self.omop_schema = os.getenv("POSTGRES_OMOP_SCHEMA")
         self.intraop_schema = os.getenv("POSTGRES_SOURCE_INTRAOP_SCHEMA")
@@ -41,7 +42,7 @@ class drug_exposure:
                 connection.execute(text(f"DROP VIEW IF EXISTS {self.drug_exposure_stg_view} CASCADE"))
                 connection.execute(text(f"DROP VIEW IF EXISTS {self.drugdrug_view}"))
                 connection.execute(text(f"DROP VIEW IF EXISTS {self.drugmed_view}"))
-                
+                connection.execute(text(f"DROP VIEW IF EXISTS {self.drugfluids_view}"))
                 # Clear all existing rows from the drug_exposure table
                 connection.execute(text(f"TRUNCATE TABLE {self.drug_exposure_table}"))
 
@@ -56,6 +57,7 @@ class drug_exposure:
                 sql_files = [
                     os.path.join(os.getenv("BASE_PATH"), f"{self.drug_exposure_table}/{self.drugdrug_view}.sql"),
                     os.path.join(os.getenv("BASE_PATH"), f"{self.drug_exposure_table}/{self.drugmed_view}.sql"),
+                    os.path.join(os.getenv("BASE_PATH"), f"{self.drug_exposure_table}/{self.drugfluids_view}.sql"),
                     os.path.join(os.getenv("BASE_PATH"), f"{self.drug_exposure_table}/{self.drug_exposure_stg_view}.sql"),
                     os.path.join(os.getenv("BASE_PATH"), f"{self.drug_exposure_table}/{self.drug_exposure_table}.sql")
                 ]
@@ -68,6 +70,7 @@ class drug_exposure:
             "{INTRAOP_SCHEMA}": self.intraop_schema,
             "{DRUGMED_STCM_VIEW}": self.drugmed_view,
             "{DRUGDRUG_STCM_VIEW}": self.drugdrug_view,
+            "{DRUGFLUIDS_STCM_VIEW}": self.drugfluids_view,
             "{DRUG_EXPOSURE_STG_VIEW}": self.drug_exposure_stg_view,
             "{DRUG_EXPOSURE_TABLE}": self.drug_exposure_table
         }
