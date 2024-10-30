@@ -7,7 +7,8 @@
 -- ----------  ----  -------  ----------------------------------------
 -- 2024-09-07  1.00           Initial create
 -- 2024-09-07  2.00           Insert data into provider table from staging view
--- 2024-09-07 3.00            Updated the schema name
+-- 2024-09-07  3.00           Updated the schema name
+-- 2024-10-30  4.00           Fix care_site_id field
 -- *******************************************************************
 
 
@@ -32,7 +33,7 @@ SELECT  provider_id,
         NULL,
         NULL,
         0,
-        38004515,
+        95,
         NULL,
         NULL,
         name,
