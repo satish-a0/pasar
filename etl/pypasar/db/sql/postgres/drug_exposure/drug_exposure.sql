@@ -10,7 +10,7 @@ INSERT INTO {OMOP_SCHEMA}.{DRUG_EXPOSURE_TABLE}
     drug_type_concept_id,
     quantity,
     days_supply,
-    --visit_occurrence_id,
+    visit_occurrence_id,
     drug_source_value
 )
 SELECT
@@ -24,6 +24,6 @@ SELECT
     drug_type_concept_id,
     quantity,
     days_supply,
-    --visit_occurrence_id,
+    visit_occurrence_id,
     drug_source_value
 FROM {OMOP_SCHEMA}.{DRUG_EXPOSURE_STG_VIEW};
