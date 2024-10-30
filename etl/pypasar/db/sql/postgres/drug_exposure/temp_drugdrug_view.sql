@@ -16,7 +16,7 @@ dd as (
 			infusion_startdatetime,
 			(operation_startdate::text || ' ' || operation_starttime)::timestamp
 		) as "drug_exposure_start_datetime",
-		greatest(operation_enddate as "drug_exposure_end_date",
+		operation_enddate as "drug_exposure_end_date",
 		(operation_enddate::text || ' ' || operation_endtime)::timestamp as "drug_exposure_end_datetime",
 		volume as "quantity",
 		concentration, -- not used in stcm

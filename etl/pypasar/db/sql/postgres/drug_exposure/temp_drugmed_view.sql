@@ -113,7 +113,7 @@ final_dm_stcm as (
 	
 )
 
-select count(*) from final_dm_stcm --17140 records
+select * from final_dm_stcm --17140 records
 
 
 -- Notes for duplicated data
