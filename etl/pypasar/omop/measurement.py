@@ -29,7 +29,7 @@ class measurement():
         self.source_postop_schema = os.getenv("POSTGRES_SOURCE_POSTOP_SCHEMA")
         self.temp_concept_table = f'temp_concept_measurement_{os.urandom(15).hex()}'
         self.measurement_id_start = 1
-        self.measurement_aimsvitals_fetch_limit = os.getenv("OMOP_MEASUREMENT_INTRAOP_AIMSVITALS_FETCH_LIMIT", 0)
+        self.measurement_aimsvitals_fetch_limit = int(os.getenv("OMOP_MEASUREMENT_INTRAOP_AIMSVITALS_FETCH_LIMIT", 0))
         self.source_tables_cols = [{"table": self.source.PREOP_LAB.value, 
                                     "columns": {"anon_case_no": str, "id": int,
                                               "session_id": int, "preop_lab_test_description": str,
