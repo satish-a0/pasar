@@ -36,6 +36,7 @@ class note:
     def process(self):
         # Set SCHEMA
         omop_schema = os.getenv("POSTGRES_OMOP_SCHEMA")
+        omop_schema = os.getenv("POSTGRES_OMOP_SCHEMA")
 
         with self.engine.connect() as connection:
             with connection.begin():
@@ -68,7 +69,7 @@ class note:
                             -- revert visit occurrence id to session id
                             sessionIDs AS (
                                 SELECT CAST(LEFT(CAST(visit_occurrence_id AS TEXT), LENGTH(CAST(visit_occurrence_id AS TEXT)) - 2) AS INTEGER) AS session_id, *
-                                    FROM omop_sqldev_schema.visit_occurrence
+                                    FROM {omop_schema}.visit_occurrence
                             )
 
                             SELECT
