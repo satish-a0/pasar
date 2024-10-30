@@ -110,7 +110,7 @@ CREATE TABLE drug_exposure (
 	provider_id integer NULL,
 	visit_occurrence_id integer NULL,
 	visit_detail_id integer NULL,
-	drug_source_value varchar(50) NULL,
+	drug_source_value varchar(100) NULL,
 	drug_source_concept_id integer NULL,
 	route_source_value varchar(50) NULL,
 	dose_unit_source_value varchar(50) NULL
