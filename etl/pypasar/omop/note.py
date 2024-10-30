@@ -125,8 +125,8 @@ class note:
                             0 AS note_class_concept_id,  -- Put 0 as source_to_concept not found
                             note_title,
                             note_text, -- all value text is NULL
-                            0 AS encoding_concept_id, -- Put 0 as source_to_concept not found
-                            0 AS language_concept_id, -- Put 0 as source_to_concept not found
+                            32678 AS encoding_concept_id,
+                            4180186 AS language_concept_id,
                             NULL AS provider_id,
                             visit_occurrence_id,
                             NULL AS visit_detail_id, -- Set as NULL based on suggestion in GitHub
