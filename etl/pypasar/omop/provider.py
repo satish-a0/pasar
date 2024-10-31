@@ -45,7 +45,7 @@ class provider:
         # Define placeholder to environment variable mappings
         placeholder_mapping = {
             "{OMOP_SCHEMA}": os.getenv("POSTGRES_OMOP_SCHEMA"),
-            "{PREOP_SCHEMA}": os.getenv("POSTGRES_SOURCE_PREOP_SCHEMA")
+            "{INTRAOP_SCHEMA}": os.getenv("POSTGRES_SOURCE_INTRAOP_SCHEMA")
         }
         
         with self.engine.connect() as connection:
