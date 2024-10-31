@@ -103,7 +103,7 @@ CREATE OR REPLACE VIEW {OMOP_SCHEMA}.stg__observation_period AS
                 op.end_date,
                 op.period_type_concept_id
             FROM observation_period_before_join AS op
-            JOIN omop_sqldev_schema.person AS p
+            JOIN {OMOP_SCHEMA}.person AS p
             ON op.person_id = p.person_source_value
             ORDER BY op.observation_period_id, p.person_id
         )
