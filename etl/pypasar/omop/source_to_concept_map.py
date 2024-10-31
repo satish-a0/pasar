@@ -13,7 +13,7 @@ class source_to_concept_map:
     def __init__(self):
         self.engine = postgres().get_engine()  # Get PG Connection
         self.omop_schema = os.getenv("POSTGRES_OMOP_SCHEMA")
-        self.source_file = os.path.join(os.getenv("BASE_PATH"), "source_to_concep_map", "v2", "data.csv")
+        self.source_file = os.path.join(os.getenv("BASE_PATH"), "source_to_concep_map", "v3", "data.csv")
         self.temp_table = f'temp_source_to_concept_map_{os.urandom(15).hex()}'
 
     def execute(self):
@@ -47,8 +47,45 @@ class source_to_concept_map:
             with connection.begin():
                 connection.execute(
                     text(f'SET search_path TO {self.omop_schema}'))
-                connection.execute(text(f"INSERT INTO source_to_concept_map (source_code, source_concept_id,source_vocabulary_id,source_code_description, target_concept_id, target_vocabulary_id, invalid_reason, valid_start_date, valid_end_date) SELECT t.source_code, t.source_concept_id, t.source_vocabulary_id, t.source_code_description, t.target_concept_id, c.vocabulary_id, c.invalid_reason, c.valid_start_date, c.valid_end_date FROM {self.temp_table} t INNER JOIN concept c ON c.concept_id = t.target_concept_id"))
-        pass
+                connection.execute(text(f'''
+                                        INSERT INTO source_to_concept_map (
+                                                source_code,
+                                                source_concept_id,
+                                                source_vocabulary_id,
+                                                source_code_description,
+                                                target_concept_id,
+                                                target_vocabulary_id,
+                                                invalid_reason,
+                                                valid_start_date,
+                                                valid_end_date
+                                            )
+                                                SELECT t.source_code,
+                                                    t.source_concept_id,
+                                                    t.source_vocabulary_id,
+                                                    t.source_code_description,
+                                                    CASE
+                                                        WHEN t.target_concept_id is null THEN 0
+                                                        ELSE t.target_concept_id
+                                                    END AS target_concept_id,
+                                                    CASE
+                                                        WHEN c.vocabulary_id is null THEN ''
+                                                        ELSE c.vocabulary_id
+                                                    END AS vocabulary_id,
+                                                    CASE
+                                                        WHEN c.invalid_reason = '' THEN null
+                                                        ELSE c.invalid_reason
+                                                    END AS invalid_reason,
+                                                    CASE
+                                                        WHEN c.valid_start_date is null THEN '01-01-1970'
+                                                        ELSE c.valid_start_date
+                                                    END AS valid_start_date,
+                                                    CASE
+                                                        WHEN c.valid_end_date is null THEN '12-31-2099'
+                                                        ELSE c.valid_end_date
+                                                    END AS valid_end_date
+                                                FROM { self.temp_table } t
+                                                LEFT JOIN concept c ON c.concept_id = t.target_concept_id
+                                '''))
 
     def finalize(self):
         with self.engine.connect() as connection:
