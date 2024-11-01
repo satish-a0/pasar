@@ -68,7 +68,7 @@ class note:
                             -- revert visit occurrence id to session id
                             sessionIDs AS (
                                 SELECT CAST(LEFT(CAST(visit_occurrence_id AS TEXT), LENGTH(CAST(visit_occurrence_id AS TEXT)) - 2) AS INTEGER) AS session_id, *
-                                    FROM omop_sqldev_schema.visit_occurrence
+                                    FROM {omop_schema}.visit_occurrence
                             )
 
                             SELECT
@@ -96,6 +96,7 @@ class note:
                             JOIN {omop_schema}.source_to_concept_map AS stcm_note
                                 ON stcm_note.source_code = clindoc.postop_clindoc_item_description
                                 AND stcm_note.source_vocabulary_id = 'SG_PASAR_POSTOP_CLIN_DOC'
+
                         '''
                      ))
 
