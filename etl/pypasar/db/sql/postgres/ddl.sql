@@ -85,7 +85,7 @@ CREATE TABLE condition_occurrence (
 	provider_id integer NULL,
 	visit_occurrence_id integer NULL,
 	visit_detail_id integer NULL,
-	condition_source_value varchar(50) NULL,
+	condition_source_value varchar(200) NULL,
 	condition_source_concept_id integer NULL,
 	condition_status_source_value varchar(50) NULL
 );
