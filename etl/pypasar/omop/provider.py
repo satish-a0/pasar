@@ -36,8 +36,8 @@ class provider:
     def process(self):
         # List of SQL file paths
         sql_files = [
-            os.path.join(os.getenv("BASE_PATH"), "provider/stg__provider.sql"),
-            os.path.join(os.getenv("BASE_PATH"), "provider/provider.sql")
+            os.path.join(os.getenv("BASE_PATH"), "provider", "stg__provider.sql"),
+            os.path.join(os.getenv("BASE_PATH"), "provider", "provider.sql")
         ]
         self.execute_sql_files(sql_files)
 
