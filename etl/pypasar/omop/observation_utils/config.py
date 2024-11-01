@@ -1,3 +1,5 @@
+import os
+
 class ObservationMappingConfig:
     # # # One to one mapping START # # #
     observation_id_mapping = {
@@ -250,4 +252,4 @@ SOURCE_TABLES = [
     "postop.icu",
 ]
 
-CHUNK_SIZE = 50000
+CHUNK_SIZE = int(os.getenv("PROCESSING_BATCH_SIZE"))
