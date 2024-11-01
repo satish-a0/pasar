@@ -213,24 +213,24 @@ class ObservationMappingConfig:
             "daytime_tiredness": {"use_hardcoded_value": 0},
             "apnoea": {"use_hardcoded_value": 313459},
             "cpap_use": {"use_hardcoded_value": 0},
-            "history_of_hypertension": {"use_hardcoded_value": 0},
+            "history_of_hypertension": {"use_hardcoded_value": 0}, # Source concept ID - 3374101
             "history_of_motion_sickness": {"use_hardcoded_value": 0},
             "postop_nausea_smoking_history": {"use_hardcoded_value": 0},
         },
         "preop.others": {
-            "forget_prescribed_medications": {"use_hardcoded_value": 0},
+            "forget_prescribed_medications": {"use_hardcoded_value": 0}, # Source concept ID - 45921872
             "no_of_prior_hospital_admissions": {"use_hardcoded_value": 0},
             "continence": {"use_hardcoded_value": 0},
         },
         "preop.char": {
-            "smoking_history": {"use_hardcoded_value": 0},
-            "alcohol_consumption": {"use_hardcoded_value": 0},
-            "pregnancy_gender": {"use_hardcoded_value": 0},
+            "smoking_history": {"use_hardcoded_value": 1340204},    # Source concept ID - 46274087
+            "alcohol_consumption": {"use_hardcoded_value": 619635}, # Source concept ID - 45454785
+            "pregnancy_gender": {"use_hardcoded_value": 4199558},
             "presence_of_malignancy": {"use_hardcoded_value": 0},
             "allergy_information": {"use_source_to_concept_mapping": True},
-            "physical_general": {"use_hardcoded_value": 0},
-            "physical_cardio": {"use_hardcoded_value": 0},
-            "physical_respiratory": {"use_hardcoded_value": 0},
+            "physical_general": {"use_hardcoded_value": 4093837},
+            "physical_cardio": {"use_hardcoded_value": 4154948},
+            "physical_respiratory": {"use_hardcoded_value": 4156044},
         },
         "postop.discharge": {"days_postop": {"use_hardcoded_value": 0}},
         "postop.info": {
