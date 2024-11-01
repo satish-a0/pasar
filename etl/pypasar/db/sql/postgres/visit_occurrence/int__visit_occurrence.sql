@@ -11,7 +11,7 @@
 
 -- Create the intermediate view for the visit_occurrence table
 CREATE OR REPLACE VIEW {OMOP_SCHEMA}.int__visit_occurrence AS
-    -- Combine staging data with 'Person' and 'Care_site' tables
+    -- Map visit_concept_id field to standard ids
     WITH mapping AS (
         SELECT
             visit_occurrence_id,
@@ -24,7 +24,7 @@ CREATE OR REPLACE VIEW {OMOP_SCHEMA}.int__visit_occurrence AS
             END AS visit_concept_id
         FROM {OMOP_SCHEMA}.stg__visit_occurrence
     ),
-    -- 
+    -- Combine staging data with 'Person' and 'Care_site' tables
     final AS (
         SELECT 
             stg__vo.visit_occurrence_id AS visit_occurrence_id,
