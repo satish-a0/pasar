@@ -27,7 +27,6 @@ class drug_era:
                 # Set the schema for subsequent SQL operations
                 connection.execute(
                     text(f'SET search_path TO {os.getenv("POSTGRES_OMOP_SCHEMA")}'))
-                connection.execute(text("DROP TABLE IF EXISTS tmp_de"))
                 # Clear all existing rows from the person table
                 connection.execute(text("TRUNCATE TABLE drug_era"))
 
