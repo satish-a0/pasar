@@ -1,3 +1,5 @@
+DROP TABLE IF EXISTS tmp_de;
+
 WITH
 -- Extract drug exposure info and calculates end dates
 ctePreDrugTarget(drug_exposure_id, person_id, ingredient_concept_id, drug_exposure_start_date, days_supply, drug_exposure_end_date) AS (
@@ -74,14 +76,14 @@ cteSubExposures(row_number, person_id, drug_concept_id, drug_sub_exposure_start_
 -- Compute drug exposure durations
 cteFinalTarget(row_number, person_id, ingredient_concept_id, drug_sub_exposure_start_date, drug_sub_exposure_end_date, drug_exposure_count, days_exposed) AS (
     SELECT row_number, person_id, drug_concept_id, drug_sub_exposure_start_date, drug_sub_exposure_end_date, drug_exposure_count,
-        DATEDIFF(DAY, drug_sub_exposure_start_date, drug_sub_exposure_end_date) AS days_exposed
+        EXTRACT(DAY FROM drug_sub_exposure_end_date - drug_sub_exposure_start_date) AS days_exposed
     FROM cteSubExposures
 ),
 
 
 -- Establish potential end dates for exposures
 cteEndDates(person_id, ingredient_concept_id, end_date) AS (
-    SELECT person_id, ingredient_concept_id, DATEADD(DAY, -30, event_date) AS end_date
+    SELECT person_id, ingredient_concept_id, event_date - INTERVAL '30 days' AS end_date
     FROM (
         SELECT person_id, ingredient_concept_id, event_date, event_type,
             MAX(start_ordinal) OVER (PARTITION BY person_id, ingredient_concept_id ORDER BY event_date, event_type ROWS UNBOUNDED PRECEDING) AS start_ordinal,
@@ -91,7 +93,7 @@ cteEndDates(person_id, ingredient_concept_id, end_date) AS (
             ROW_NUMBER() OVER (PARTITION BY person_id, ingredient_concept_id ORDER BY drug_sub_exposure_start_date) AS start_ordinal
             FROM cteFinalTarget
             UNION ALL
-            SELECT person_id, ingredient_concept_id, DATEADD(DAY, 30, drug_sub_exposure_end_date), 1 AS event_type
+            SELECT person_id, ingredient_concept_id, drug_sub_exposure_end_date + INTERVAL '30 days', 1 AS event_type, NULL
             FROM cteFinalTarget
         ) RAWDATA
     ) e
@@ -124,7 +126,7 @@ SELECT
     MIN(drug_sub_exposure_start_date) AS drug_era_start_date,
     drug_era_end_date,
     SUM(drug_exposure_count) AS drug_exposure_count,
-    DATEDIFF(DAY, MIN(drug_sub_exposure_start_date), drug_era_end_date) - SUM(days_exposed) AS gap_days
+    EXTRACT(DAY FROM (drug_era_end_date - MIN(drug_sub_exposure_start_date))) - SUM(days_exposed) AS gap_days
 INTO tmp_de
 FROM cteDrugEraEnds dee
 GROUP BY person_id, drug_concept_id, drug_era_end_date;
