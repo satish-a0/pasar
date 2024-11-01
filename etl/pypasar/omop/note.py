@@ -85,6 +85,7 @@ class note:
                             END AS note_text,
 
                                 CDM_VisitOcc.visit_occurrence_id AS visit_occurrence_id,
+                                coalesce(stcm_note.target_concept_id,0) AS note_class_concept_id,
                                 clindoc.postop_clindoc_item_description AS note_source_value
                             FROM filtered AS clindoc
                             -- Join tables needed for person_id, visit_occurrence_id, visit_detail_id
@@ -92,6 +93,10 @@ class note:
                                 ON clindoc.anon_case_no=CDM_PER.person_source_value
                             JOIN sessionIDs AS CDM_VisitOcc
                                 ON clindoc.session_id=CDM_VisitOcc.session_id
+                            JOIN {omop_schema}.source_to_concept_map AS stcm_note
+                                ON stcm_note.source_code = clindoc.postop_clindoc_item_description
+                                AND stcm_note.source_vocabulary_id = 'SG_PASAR_POSTOP_CLIN_DOC'
+
                         '''
                      ))
 
@@ -120,9 +125,9 @@ class note:
                             note_id,
                             person_id,
                             note_date,
-                            (note_date::text || ' 00:00:00')::timestamp AS note_datetime, -- Function used to take date and join to midnight
+                            (note_date::text || ' 00:00:00')::timestamp AS note_datetime, -- Function used to take date and join with midnight time to represent as default
                             32879 AS note_type_concept_id,
-                            0 AS note_class_concept_id,  -- Put 0 as source_to_concept not found
+                            note_class_concept_id,
                             note_title,
                             note_text, -- all value text is NULL
                             32678 AS encoding_concept_id,
