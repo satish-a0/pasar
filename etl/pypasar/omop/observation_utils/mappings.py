@@ -47,11 +47,9 @@ class ObservationMapping():
 
     @mapping_wrapper
     def map_visit_occurrence_id(self, df: pd.DataFrame) -> pd.DataFrame:
-        # TODO: Update logic for visit_occurence_id
         visit_occurrence_id_mapping = ObservationMappingConfig.visit_occurrence_id_mapping
 
-        df[visit_occurrence_id_mapping["omop"]
-           ] = df[visit_occurrence_id_mapping["pasar"]]
+        df[visit_occurrence_id_mapping["omop"]] = df.apply(lambda row: int(str(row[visit_occurrence_id_mapping["pasar"]]) + '00'), axis=1)
         return df[[visit_occurrence_id_mapping["omop"]]]
 
     @mapping_wrapper
