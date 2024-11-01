@@ -17,6 +17,9 @@ class condition_occurrence:
         self.omop_schema = os.getenv("POSTGRES_OMOP_SCHEMA")
         self.source_postop_schema = os.getenv("POSTGRES_SOURCE_POSTOP_SCHEMA")
         self.limit, self.offset = int(os.getenv("PROCESSING_BATCH_SIZE")), 0
+        self.temp_table = f'temp_condition_occurrence_{os.urandom(15).hex()}'
+        self.temp_concept_table = f'temp_concept_{os.urandom(15).hex()}'
+        print(f'condition_occurrence temporary table {self.temp_table}, concept temporary table {self.temp_concept_table}')
 
     def execute(self):
         try:
@@ -29,26 +32,91 @@ class condition_occurrence:
 
     def initialize(self):
         # Truncate
-        with self.engine.connect() as connection:
+        self.truncate_table(f"{self.omop_schema}.condition_occurrence")
+        # Create temporary table based on concept relationship and concept tables
+        self.create_temp_concept_table()
+
+    def create_temp_concept_table(self):
+         with self.engine.connect() as connection:
             with connection.begin():
-                connection.execute(text(f"Truncate table {self.omop_schema}.condition_occurrence"))
+                connection.execute(text(f'SET search_path TO {self.omop_schema}'))
+                # This is used to map the non-standard source concept codes -> non-standard concept ids -> standard concept ids
+                connection.execute(text(f'''CREATE TEMPORARY TABLE {self.temp_concept_table} AS
+                                            select *
+                                                from (
+                                                        select sc.diagnosis_code as condition_source_value,
+                                                            sc.concept_id as source_concept_id,
+                                                            COALESCE(cr.concept_id_2, 0) as target_concept_id,
+                                                            cr.relationship_id,
+                                                            ROW_NUMBER() OVER(
+                                                                PARTITION BY sc.diagnosis_code
+                                                                ORDER BY sc.diagnosis_code,
+                                                                    cr.concept_id_1,
+                                                                    cr.valid_start_date asc,
+                                                                    cr.valid_end_date desc
+                                                            ) rownum
+                                                        from (
+                                                                (
+                                                                    select p.diagnosis_code, --Form query to select codes As is
+                                                                        c.concept_id
+                                                                    from {self.source_postop_schema}.discharge p
+                                                                        inner join {self.omop_schema}.concept c on p.diagnosis_code = c.concept_code
+                                                                    group by p.diagnosis_code,
+                                                                        c.concept_id
+                                                                )
+                                                                UNION
+                                                                (
+                                                                    select p.diagnosis_code, --Form query to select modified diagnosis codes as per ICD10
+                                                                        c.concept_id
+                                                                    from (
+                                                                            select concat(
+                                                                                    substring(diagnosis_code, 1, 3),
+                                                                                    '.',
+                                                                                    substring(diagnosis_code, 4)
+                                                                                ) as diagnosis_decimal_code,
+                                                                                diagnosis_code 
+                                                                            from {self.source_postop_schema}.discharge
+                                                                            where diagnosis_code SIMILAR TO '[A-Z]%' order by diagnosis_code --Choose 1st character as alphabet to exclude procedure codes starting with numeric and not part of ICD10
+                                                                        ) p
+                                                                        left join (
+                                                                            select *
+                                                                            from {self.omop_schema}.concept
+                                                                            where invalid_reason is null
+                                                                        ) c on p.diagnosis_decimal_code = c.concept_code
+                                                                    order by p.diagnosis_code
+                                                                )
+                                                            ) sc
+                                                            left join (
+                                                                select *
+                                                                from {self.omop_schema}.concept_relationship
+                                                                where relationship_id = 'Maps to'
+                                                                    and invalid_reason is null
+                                                            ) cr on sc.concept_id = cr.concept_id_1
+                                                    ) final_scm
+                                                where rownum = 1 --Pick the 1st row among duplicate coming from both ICD10 and IC10CM vocabularies for example
+                                                ''' 
+                                    )
+                                )
 
     def process(self):
         total_count_source_postop_discharge = self.fetch_total_count_source_postop_discharge()
         print(f"Total count {total_count_source_postop_discharge}")
-        while self.offset <= total_count_source_postop_discharge: # Fetch and process in batches
+        while self.offset < total_count_source_postop_discharge: # Fetch and process in batches
             source_batch = self.retrieve()
             transformed_batch = self.transform(source_batch)
             del source_batch
             self.ingest(transformed_batch)
+            self.offset += len(transformed_batch)
             del transformed_batch
             gc.collect()
-            self.offset = self.offset + self.limit
+            self.truncate_table(f"{self.omop_schema}.{self.temp_table}") # Truncate temp table
 
     def retrieve(self):
         source_batch = self.fetch_in_batch_source_postop_discharge()
         source_postop_discharge_df = pd.DataFrame(source_batch.fetchall())
-        source_postop_discharge_df.columns = {'anon_case_no': str, 'id': int, 'diagnosis_date': 'datetime64[ns]', 'diagnosis_code': str, 'session_id': int}.keys()
+        source_postop_discharge_df.columns = {'anon_case_no': str, 'id': int, 
+                                              'session_enddate': 'datetime64[ns]', 'diagnosis_code': str, 
+                                              'diagnosis_description': str, 'session_id': int}.keys()
         print(source_postop_discharge_df.head(1))
         print(f"offset {self.offset} limit {self.limit} batch_count {len(source_postop_discharge_df)} retrieved..")
         return source_postop_discharge_df
@@ -59,9 +127,6 @@ class condition_occurrence:
             'person_id': int,
             'condition_concept_id': int,
             'condition_start_date': 'datetime64[ns]',
-            'condition_start_datetime': 'datetime64[ns]',
-            'condition_end_date': 'datetime64[ns]',
-            'condition_end_datetime': 'datetime64[ns]',
             'condition_type_concept_id': int,
             'condition_status_concept_id': int,
             'visit_occurrence_id': int,
@@ -69,28 +134,72 @@ class condition_occurrence:
         }
         # Initialize dataframe and display columns info
         condition_occ_df = pd.DataFrame(columns=condition_occurrence_schema.keys()).astype(condition_occurrence_schema)
-        # print(f"source {len(source_batch)}")
+        print(f"source {len(source_batch)}")
         
         if len(source_batch) > 0:
-            condition_occ_df['condition_start_date'] = pd.to_datetime(source_batch['diagnosis_date']).dt.date
-            condition_occ_df['condition_start_datetime'] = source_batch['diagnosis_date']
-            condition_occ_df['condition_end_date'] = None
-            condition_occ_df['condition_end_datetime'] = None
+            condition_occ_df['condition_start_date'] = pd.to_datetime(source_batch['session_enddate'])
             condition_occ_df['condition_type_concept_id'] = 32879
             condition_occ_df['condition_status_concept_id'] = 32896
             condition_occ_df['condition_concept_id'] = 0 # TODO: Update
-            condition_occ_df['person_id'] = 0 # TODO: Update
-            condition_occ_df['visit_occurrence_id'] = 0 # TODO: Update
+            condition_occ_df['anon_case_no'] = source_batch['anon_case_no'] # Person source value
+            condition_occ_df['session_id'] = source_batch['session_id'] # Visit occurrence id source value without suffix
             condition_occ_df['condition_source_value'] = source_batch['diagnosis_code']
-            condition_occ_df['condition_occurrence_id'] = range(self.offset + 1, self.offset + len(source_batch) + 1)
-            #print(condition_occ_df.head(1))
+            condition_occ_df['condition_source_description'] = source_batch['diagnosis_description']
+            condition_occ_df['condition_occurrence_id'] = range(self.offset + 1, (self.offset + 1 + len(source_batch)))
+            print(f'condition_occ_df {len(condition_occ_df)}')
+            print(condition_occ_df.head(3))
         
         # print(f"target {len(condition_occ_df)}")
         return condition_occ_df
 
 
     def ingest(self, transformed_batch):
-        transformed_batch.to_sql(name='condition_occurrence', schema=self.omop_schema, con=self.engine, if_exists='append', index=False)
+        transformed_batch.to_sql(name=self.temp_table, schema=self.omop_schema, con=self.engine, if_exists='replace', index=False)
+        with self.engine.connect() as connection:
+            with connection.begin():
+                connection.execute(text(f'SET search_path TO {self.omop_schema}'))
+                connection.execute(text(f'''INSERT INTO condition_occurrence (
+                                            condition_occurrence_id,
+                                            person_id,
+                                            condition_concept_id,
+                                            condition_source_concept_id,
+                                            condition_type_concept_id,
+                                            condition_status_concept_id,
+                                            condition_start_date,
+                                            visit_occurrence_id,
+                                            condition_source_value
+                                        )
+                                            SELECT t.condition_occurrence_id,
+                                                p.person_id,
+                                                COALESCE(c.target_concept_id, 0) AS condition_concept_id,
+                                                c.source_concept_id AS condition_source_concept_id,
+                                                t.condition_type_concept_id,
+                                                t.condition_status_concept_id,
+                                                t.condition_start_date,
+                                                v.visit_occurrence_id,
+                                                CONCAT(t.condition_source_value, '-', t.condition_source_description) AS condition_source_value
+                                            FROM { self.temp_table } t
+                                                INNER JOIN PERSON p ON t.anon_case_no = p.person_source_value
+                                                INNER JOIN ( --Reverse mapping from visit_occurrence_id to session_id. Pick only the visit_occurrence_id with suffix '00' by using window function
+                                                    SELECT visit_occurrence_id,
+                                                        row_number() over (
+                                                            partition by CAST(
+                                                                LEFT(
+                                                                    CAST(visit_occurrence_id AS TEXT),
+                                                                    LENGTH(CAST(visit_occurrence_id AS TEXT)) - 2
+                                                                ) AS INTEGER
+                                                            )
+                                                        ) rownum,
+                                                        CAST(
+                                                            LEFT(
+                                                                CAST(visit_occurrence_id AS TEXT),
+                                                                LENGTH(CAST(visit_occurrence_id AS TEXT)) - 2
+                                                            ) AS INTEGER
+                                                        ) AS truncated_visit_occurrence_id
+                                                    FROM VISIT_OCCURRENCE
+                                                ) v ON v.truncated_visit_occurrence_id = t.session_id
+                                                AND v.rownum = 1 
+                                                INNER JOIN { self.temp_concept_table } c ON t.condition_source_value = c.condition_source_value'''))
         print(f"offset {self.offset} limit {self.limit} batch_count {len(transformed_batch)} ingested..")
 
     def fetch_total_count_source_postop_discharge(self):
@@ -104,10 +213,20 @@ class condition_occurrence:
         with self.engine.connect() as connection:
             with connection.begin():
                 res = connection.execute(
-                    text(f'select anon_case_no, id, diagnosis_date, diagnosis_code, session_id from {self.source_postop_schema}.discharge limit {self.limit} offset {self.offset}'))
+                    text(f'select anon_case_no, id, session_enddate, diagnosis_code, diagnosis_description, session_id from {self.source_postop_schema}.discharge limit {self.limit} offset {self.offset}'))
                 return res
 
+    def truncate_table(self, table_name_w_schema_prefix):
+        with self.engine.connect() as connection:
+            with connection.begin():
+                connection.execute(text(f"Truncate table {table_name_w_schema_prefix}"))
+
+    def drop_table(self, table_name_w_schema_prefix):
+        with self.engine.connect() as connection:
+            with connection.begin():
+                connection.execute(text(f"DROP table {table_name_w_schema_prefix}"))
 
     def finalize(self):
         # cleanup
+        self.drop_table(f"{self.omop_schema}.{self.temp_table}")
         self.engine.dispose()
