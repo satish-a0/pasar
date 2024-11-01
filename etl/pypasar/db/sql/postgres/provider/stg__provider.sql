@@ -6,15 +6,22 @@
 -- DATE        VERS  INITIAL  CHANGE DESCRIPTION
 -- ----------  ----  -------  ----------------------------------------
 -- 2024-08-27  1.00           Initial create
+-- 2024-11-01  2.00           Map specialty_concept_id field to standard ids
 -- *******************************************************************
 
 -- Create the staging view for the provider table, assigning a unique provider_id
 CREATE OR REPLACE VIEW {OMOP_SCHEMA}.stg__provider AS
-    -- Extract relevant columns from the pre_op.operation table
-    WITH unique_surgeons AS (
-    SELECT surgeon_table.anon_surgeon_name AS name, surgeon_table.surgical_specialty AS specialty
+  -- Extract relevant columns from the pre_op.operation table
+  WITH unique_surgeons AS (
+    SELECT 
+      surgeon_table.anon_surgeon_name AS name, 
+      surgeon_table.surgical_specialty AS specialty
     FROM (
-     SELECT anon_surgeon_name, LOWER(surgical_specialty) as surgical_specialty, count(*), ROW_NUMBER() OVER(PARTITION by anon_surgeon_name ORDER BY count(*) DESC) AS rnk
+      SELECT 
+        anon_surgeon_name, 
+        LOWER(surgical_specialty) as surgical_specialty, 
+        count(*), 
+        ROW_NUMBER() OVER(PARTITION by anon_surgeon_name ORDER BY count(*) DESC) AS rnk
       FROM {INTRAOP_SCHEMA}."operation"
       WHERE anon_surgeon_name IS NOT NULL
       GROUP by anon_surgeon_name, LOWER(surgical_specialty)
@@ -23,9 +30,15 @@ CREATE OR REPLACE VIEW {OMOP_SCHEMA}.stg__provider AS
     WHERE surgeon_table.rnk = 1
   ),
   unique_anaesthetists_1 AS (
-    SELECT anaesthetist_1_table.anon_plan_anaesthetist_1_name AS name, anaesthetist_1_table.plan_anaesthetist_1_type AS specialty
+    SELECT 
+      anaesthetist_1_table.anon_plan_anaesthetist_1_name AS name, 
+      anaesthetist_1_table.plan_anaesthetist_1_type AS specialty
     FROM (
-      SELECT anon_plan_anaesthetist_1_name, LOWER(plan_anaesthetist_1_type) as plan_anaesthetist_1_type, count(*), ROW_NUMBER() OVER(PARTITION by anon_plan_anaesthetist_1_name ORDER BY count(*) DESC) AS rnk
+      SELECT 
+        anon_plan_anaesthetist_1_name, 
+        LOWER(plan_anaesthetist_1_type) as plan_anaesthetist_1_type, 
+        count(*), 
+        ROW_NUMBER() OVER(PARTITION by anon_plan_anaesthetist_1_name ORDER BY count(*) DESC) AS rnk
       FROM {INTRAOP_SCHEMA}."operation"
       WHERE anon_plan_anaesthetist_1_name IS NOT NULL
       GROUP by anon_plan_anaesthetist_1_name, LOWER(plan_anaesthetist_1_type)
@@ -34,31 +47,54 @@ CREATE OR REPLACE VIEW {OMOP_SCHEMA}.stg__provider AS
     WHERE anaesthetist_1_table.rnk = 1
   ),
   unique_anaesthetists_2 AS (
-    SELECT anaesthetist_2_table.anon_plan_anaesthetist_2_name AS name, anaesthetist_2_table.plan_anaesthetist_2_type AS specialty
+    SELECT 
+      anaesthetist_2_table.anon_plan_anaesthetist_2_name AS name, 
+      anaesthetist_2_table.plan_anaesthetist_2_type AS specialty
     FROM (
-      SELECT anon_plan_anaesthetist_2_name, LOWER(plan_anaesthetist_2_type) AS plan_anaesthetist_2_type, count(*), ROW_NUMBER() OVER(PARTITION by anon_plan_anaesthetist_2_name ORDER BY COUNT(*) DESC) AS rnk
+      SELECT 
+        anon_plan_anaesthetist_2_name, 
+        LOWER(plan_anaesthetist_2_type) AS plan_anaesthetist_2_type, 
+        count(*), 
+        ROW_NUMBER() OVER(PARTITION by anon_plan_anaesthetist_2_name ORDER BY COUNT(*) DESC) AS rnk
       FROM {INTRAOP_SCHEMA}."operation"
       WHERE anon_plan_anaesthetist_2_name IS NOT NULL
       GROUP by anon_plan_anaesthetist_2_name, LOWER(plan_anaesthetist_2_type)
       ORDER BY anon_plan_anaesthetist_2_name, COUNT(*) DESC
     ) AS anaesthetist_2_table 
     WHERE anaesthetist_2_table.rnk = 1
+  ),
+  -- Combine distinct records from all sources
+  combined AS (
+    SELECT ROW_NUMBER() OVER (ORDER BY specialty ASC) AS provider_id, * 
+    FROM
+    (
+      SELECT * FROM unique_surgeons
+    
+      UNION ALL
+    
+      SELECT anaesthetists_1.name, anaesthetists_1.specialty 
+      FROM unique_anaesthetists_1 AS anaesthetists_1
+      LEFT JOIN unique_anaesthetists_2 AS anaesthetists_2
+        ON anaesthetists_1.name = anaesthetists_2.name AND anaesthetists_2.name is NULL
+    
+      UNION ALL
+    
+      SELECT anaesthetists_2.name, anaesthetists_2.specialty 
+      FROM unique_anaesthetists_1 AS anaesthetists_1
+      RIGHT JOIN unique_anaesthetists_2 AS anaesthetists_2
+        ON anaesthetists_1.name = anaesthetists_2.name AND anaesthetists_1.name is NULL
+    ) AS final
+    GROUP BY name, specialty    -- Ensure distinct rows by grouping by name and specialty
+    ORDER BY specialty ASC
   )
 
-  SELECT  ROW_NUMBER() OVER (ORDER BY specialty ASC) AS provider_id, * 
-  FROM
-  (
-    SELECT * FROM unique_surgeons
-    UNION ALL
-    SELECT anaesthetists_1.name, anaesthetists_1.specialty 
-    FROM unique_anaesthetists_1 AS anaesthetists_1
-    LEFT JOIN unique_anaesthetists_2 AS anaesthetists_2
-    ON anaesthetists_1.name = anaesthetists_2.name AND anaesthetists_2.name is NULL
-    UNION ALL
-    SELECT anaesthetists_2.name, anaesthetists_2.specialty 
-    FROM unique_anaesthetists_1 AS anaesthetists_1
-    RIGHT JOIN unique_anaesthetists_2 AS anaesthetists_2
-    ON anaesthetists_1.name = anaesthetists_2.name AND anaesthetists_1.name is NULL
-  ) AS final
-  GROUP BY name, specialty    -- Ensure distinct rows by grouping by name and specialty
-  ORDER BY specialty ASC;
+  SELECT
+    c.provider_id AS provider_id,
+    c.name AS name,
+    c.specialty AS specialty,
+    COALESCE(stcm.target_concept_id, 38004450) AS specialty_concept_id
+  FROM combined AS c
+  -- Get specialty_concept_id standard concept ID
+  LEFT JOIN {OMOP_SCHEMA}.source_to_concept_map AS stcm
+    ON LOWER(c.specialty) = LOWER(stcm.source_code)
+    AND stcm.source_vocabulary_id = 'SG_PASAR_INTRAOP_OPERATION_SPECIALTY';
