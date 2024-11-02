@@ -28,7 +28,7 @@ class condition_era:
                 connection.execute(
                     text(f'SET search_path TO {os.getenv("POSTGRES_OMOP_SCHEMA")}'))
                 # Clear all existing rows from the person table
-                connection.execute(text("TRUNCATE TABLE condition_era"))
+                connection.execute(text("TRUNCATE TABLE condition_era CASCADE"))
 
     def process(self):
         # List of SQL file paths

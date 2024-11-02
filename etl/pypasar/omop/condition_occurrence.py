@@ -219,7 +219,7 @@ class condition_occurrence:
     def truncate_table(self, table_name_w_schema_prefix):
         with self.engine.connect() as connection:
             with connection.begin():
-                connection.execute(text(f"Truncate table {table_name_w_schema_prefix}"))
+                connection.execute(text(f"Truncate table {table_name_w_schema_prefix} CASCADE"))
 
     def drop_table(self, table_name_w_schema_prefix):
         with self.engine.connect() as connection:

@@ -31,7 +31,7 @@ class note:
                 connection.execute(text("DROP VIEW IF EXISTS stg__note"))
 
                 # Delete note table
-                connection.execute(text("TRUNCATE TABLE note"))
+                connection.execute(text("TRUNCATE TABLE note CASCADE"))
 
     def process(self):
         # Set SCHEMA

@@ -30,7 +30,7 @@ class care_site:
                 # Drop the view if it exists
                 connection.execute(text("DROP VIEW IF EXISTS stg__care_site"))
                 # Clear all existing rows from the care_site table
-                connection.execute(text("TRUNCATE TABLE care_site"))
+                connection.execute(text("TRUNCATE TABLE care_site CASCADE"))
 
     def process(self):
         # List of SQL file paths

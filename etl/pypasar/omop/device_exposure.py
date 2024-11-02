@@ -32,7 +32,7 @@ class device_exposure:
                 connection.execute(text("DROP VIEW IF EXISTS stg__device_exposure"))
 
                 # Delete device_exposure table
-                connection.execute(text("TRUNCATE TABLE device_exposure"))
+                connection.execute(text("TRUNCATE TABLE device_exposure CASCADE"))
 
     def process(self):
         # In batches
