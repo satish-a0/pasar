@@ -32,7 +32,7 @@ class visit_detail:
                 connection.execute(text("DROP VIEW IF EXISTS stg__visit_detail CASCADE"))
                 connection.execute(text("DROP VIEW IF EXISTS int__visit_detail CASCADE"))
                 # Clear all existing rows from the visit_detail table
-                connection.execute(text("TRUNCATE TABLE visit_detail"))
+                connection.execute(text("TRUNCATE TABLE visit_detail CASCADE"))
 
     def process(self):
         # List of SQL file paths

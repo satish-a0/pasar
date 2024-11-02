@@ -30,7 +30,7 @@ class specimen:
                 # Drop the view if it exists
                 connection.execute(text("DROP VIEW IF EXISTS stg__specimen"))
                 # Clear all existing rows from the specimen table
-                connection.execute(text("TRUNCATE TABLE specimen"))
+                connection.execute(text("TRUNCATE TABLE specimen CASCADE"))
 
     def process(self):
         # List of SQL file paths

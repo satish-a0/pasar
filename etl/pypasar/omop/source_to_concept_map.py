@@ -29,7 +29,7 @@ class source_to_concept_map:
         # Truncate
         with self.engine.connect() as connection:
             with connection.begin():
-                connection.execute(text(f"Truncate table {self.omop_schema}.source_to_concept_map"))
+                connection.execute(text(f"Truncate table {self.omop_schema}.source_to_concept_map CASCADE"))
 
     def process(self):
         self.retrieve()

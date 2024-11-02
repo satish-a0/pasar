@@ -30,7 +30,7 @@ class person:
                 # Drop the view if it exists
                 connection.execute(text("DROP VIEW IF EXISTS stg__person"))
                 # Clear all existing rows from the person table
-                connection.execute(text("TRUNCATE TABLE person"))
+                connection.execute(text("TRUNCATE TABLE person CASCADE"))
 
     def process(self):
         # List of SQL file paths
