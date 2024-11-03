@@ -92,7 +92,7 @@ class measurement():
         #Truncate
         with self.engine.connect() as connection:
             with connection.begin():
-                connection.execute(text(f"Truncate table {self.omop_schema}.measurement CASCADE"))
+                connection.execute(text(f"DELETE FROM {self.omop_schema}.measurement"))
         # Create temporary concept table
         self.create_temp_concept_table()
 

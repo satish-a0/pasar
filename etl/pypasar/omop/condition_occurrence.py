@@ -118,7 +118,7 @@ class condition_occurrence:
                                               'session_enddate': 'datetime64[ns]', 'diagnosis_code': str, 
                                               'diagnosis_description': str, 'session_id': int}.keys()
         # print(source_postop_discharge_df.head(1))
-        print(f"offset {self.offset} limit {self.limit} batch_count {len(source_postop_discharge_df)} retrieved..")
+        #print(f"offset {self.offset} limit {self.limit} batch_count {len(source_postop_discharge_df)} retrieved..")
         return source_postop_discharge_df
     
     def transform(self, source_batch):
@@ -200,7 +200,7 @@ class condition_occurrence:
                                                 ) v ON v.truncated_visit_occurrence_id = t.session_id
                                                 AND v.rownum = 1 
                                                 INNER JOIN { self.temp_concept_table } c ON t.condition_source_value = c.condition_source_value'''))
-        print(f"offset {self.offset} limit {self.limit} batch_count {len(transformed_batch)} ingested..")
+        #print(f"offset {self.offset} limit {self.limit} batch_count {len(transformed_batch)} ingested..")
 
     def fetch_total_count_source_postop_discharge(self):
         with self.engine.connect() as connection:
@@ -219,7 +219,7 @@ class condition_occurrence:
     def truncate_table(self, table_name_w_schema_prefix):
         with self.engine.connect() as connection:
             with connection.begin():
-                connection.execute(text(f"Truncate table {table_name_w_schema_prefix} CASCADE"))
+                connection.execute(text(f"DELETE FROM {table_name_w_schema_prefix}"))
 
     def drop_table(self, table_name_w_schema_prefix):
         with self.engine.connect() as connection:

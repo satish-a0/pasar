@@ -40,7 +40,7 @@ class observation:
                 connection.execute(
                     text(f'SET search_path TO {os.getenv("POSTGRES_OMOP_SCHEMA")}'))
                 # Truncate observation table
-                connection.execute(text("Truncate table observation CASCADE"))
+                connection.execute(text("DELETE FROM observation"))
         logger.info("Truncating Done")
 
     def process(self):

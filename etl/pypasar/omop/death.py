@@ -38,7 +38,7 @@ class death:
                     raise ValueError(f'There is duplicate in death_date.')
 
                 # Delete death table
-                connection.execute(text("TRUNCATE TABLE death CASCADE"))
+                connection.execute(text("DELETE FROM death"))
 
     def process(self):
         # Set SCHEMA

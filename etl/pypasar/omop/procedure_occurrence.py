@@ -30,7 +30,7 @@ class procedure_occurrence:
                 # Drop the view if it exists
                 connection.execute(text("DROP VIEW IF EXISTS stg__procedure_occurrence"))
                 # Clear all existing rows from the person table
-                connection.execute(text("TRUNCATE TABLE procedure_occurrence CASCADE"))
+                connection.execute(text("DELETE FROM procedure_occurrence"))
 
     def process(self):
        # List of SQL file paths

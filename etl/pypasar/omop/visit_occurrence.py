@@ -31,7 +31,7 @@ class visit_occurrence:
                 connection.execute(text("DROP VIEW IF EXISTS stg__visit_occurrence CASCADE"))
                 connection.execute(text("DROP VIEW IF EXISTS int__visit_occurrence CASCADE"))
                 # Clear all existing rows from the visit_occurrence table
-                connection.execute(text("TRUNCATE TABLE visit_occurrence CASCADE"))
+                connection.execute(text("DELETE FROM visit_occurrence"))
 
     def process(self):
         # List of SQL file paths

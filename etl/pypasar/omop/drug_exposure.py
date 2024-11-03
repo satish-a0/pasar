@@ -44,7 +44,7 @@ class drug_exposure:
                 connection.execute(text(f"DROP VIEW IF EXISTS {self.drugmed_view}"))
                 connection.execute(text(f"DROP VIEW IF EXISTS {self.drugfluids_view}"))
                 # Clear all existing rows from the drug_exposure table
-                connection.execute(text(f"TRUNCATE TABLE {self.drug_exposure_table} CASCADE"))
+                connection.execute(text(f"DELETE FROM {self.drug_exposure_table}"))
 
     def process(self):
         # In batches

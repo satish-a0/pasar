@@ -29,7 +29,7 @@ class cdm_source:
                 connection.execute(
                     text(f'SET search_path TO {os.getenv("POSTGRES_OMOP_SCHEMA")}'))
                 # Insert record
-                connection.execute(text("Truncate table cdm_source"))
+                connection.execute(text("DELETE FROM cdm_source"))
 
     def process(self):
         with self.engine.connect() as connection:

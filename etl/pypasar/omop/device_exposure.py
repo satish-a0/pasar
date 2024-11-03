@@ -35,7 +35,7 @@ class device_exposure:
                 connection.execute(text("DROP VIEW IF EXISTS int__device_exposure CASCADE"))
 
                 # Delete device_exposure table
-                connection.execute(text("TRUNCATE TABLE device_exposure CASCADE"))
+                connection.execute(text("DELETE FROM device_exposure"))
 
     def process(self):
         # In batches
