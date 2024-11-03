@@ -20,7 +20,7 @@ class ObservationMappingConfig:
     }
 
     visit_occurrence_id_mapping = {
-        "pasar": "session_id", "omop": "visit_occurrence_id"}
+        "pasar": "session_id", "omop": "visit_occurrence_id", "joinpasaromop": "omop_visit_occurrence_id"}
 
     value_as_concept_id_mapping = {
         "pasar": "allergy_information",

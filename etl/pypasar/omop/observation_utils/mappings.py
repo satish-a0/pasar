@@ -48,8 +48,21 @@ class ObservationMapping():
     @mapping_wrapper
     def map_visit_occurrence_id(self, df: pd.DataFrame) -> pd.DataFrame:
         visit_occurrence_id_mapping = ObservationMappingConfig.visit_occurrence_id_mapping
-
-        df[visit_occurrence_id_mapping["omop"]] = df.apply(lambda row: int(str(row[visit_occurrence_id_mapping["pasar"]]) + '00'), axis=1)
+        session_id_df = pd.DataFrame()
+        
+        # Join source session_id and existing omop visit_occurrence_id
+        session_id_df[[visit_occurrence_id_mapping["pasar"], visit_occurrence_id_mapping["joinpasaromop"]]] = df[[visit_occurrence_id_mapping["pasar"], visit_occurrence_id_mapping["joinpasaromop"]]]
+        
+        # Rank existing omop visit_occurrence_id within each session_id
+        session_id_df["visit_occurrence_id_rank"] = session_id_df.groupby(visit_occurrence_id_mapping["pasar"])[visit_occurrence_id_mapping["joinpasaromop"]].rank(method="first", ascending=True)
+        
+        # Filter rank
+        session_id_df = session_id_df[session_id_df['visit_occurrence_id_rank'] == 1.0]
+        
+        # Assign existing visit_occurrence_id
+        df[visit_occurrence_id_mapping["omop"]] = session_id_df.apply(
+                                                    lambda row: row[visit_occurrence_id_mapping["joinpasaromop"]], axis=1)
+        del session_id_df # cleanup
         return df[[visit_occurrence_id_mapping["omop"]]]
 
     @mapping_wrapper
