@@ -3,15 +3,18 @@ import sys
 import traceback
 from dotenv import load_dotenv
 from importlib import import_module
-from pypasar.db.utils import postgres
-
+import time
+import json
+from datetime import timedelta
 import logging
+
+from pypasar.db.utils import postgres, final_statistics
+
 # Get LOGLEVEL from env and sets logger log level, defaults to ERROR
 logging.basicConfig(level=os.getenv("LOGLEVEL", "ERROR"))
 
 # Load environment variables from the .env file
 load_dotenv()
-
 
 def select_db_dialect(db_dialect):
     db = None
@@ -48,12 +51,13 @@ def etl(tables):
     else:
         # Ingestion will proceed in the order defined wherein dependencies will be populated first
         omop_entities_to_ingest = [
-            'cdm_source',  # Required for OHDSI R Packages like data quality to run
-            'concept',
-            'source_to_concept_map',
-            'location',
-            'provider',
+            #'cdm_source',  # Required for OHDSI R Packages like data quality to run
+            #'concept',
+            #'concept_ancestor',
+            #'concept_relationship',
+            #'source_to_concept_map',
             'care_site',
+            'provider',
             'person',
             'observation_period',
             'death',
@@ -65,15 +69,15 @@ def etl(tables):
             'drug_era',
             'procedure_occurrence',
             'device_exposure',
-            'measurement',
             'observation',
             'note',
             'specimen',
-            'payer_plan_period',
-            'cost'
+            'measurement'
         ]
 
     print(f"OMOP tables to be executed: {omop_entities_to_ingest}")
+
+    table_etl_ingestion_time_dict = {}
 
     # Start ETL for OMOP Tables
     try:
@@ -82,12 +86,23 @@ def etl(tables):
             omop_module = import_module(f'pypasar.omop.{omop_entity}')
             omop_class = getattr(omop_module, omop_entity)()
             print(f"Begin execution for {omop_entity}..")
+            start_time = time.monotonic()
             omop_class.execute()
-            print(f"Completed execution for {omop_entity}..")
+            td = timedelta(seconds=time.monotonic() - start_time)
+            table_etl_ingestion_time_dict[omop_entity] = {"time_taken": f"{td.total_seconds()}s"}
+            print(f"Completed execution for {omop_entity}: {td.total_seconds()}s")
             print()
+
+        table_count_dict = collect_statistics(omop_entities_to_ingest)
+        final_statistic_dict =  {k: v | table_count_dict[k] for k, v in table_etl_ingestion_time_dict.items()}
+        print(json.dumps(final_statistic_dict, indent=3))
     except Exception as err:
         raise err
 
+def collect_statistics(omop_entities_to_ingest):
+    print(f"Begin execution for final_statistics..")
+    collect_statistics = final_statistics.final_statistics()
+    return collect_statistics.execute(omop_entities_to_ingest)
 
 # Entrypoint
 try:
