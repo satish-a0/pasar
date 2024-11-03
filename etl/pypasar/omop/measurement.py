@@ -131,7 +131,7 @@ class measurement():
         print(f"Total count {total_count_source_table}")
         while self.offset <= total_count_source_table: # Fetch and process in batches
             source_batch = self.retrieve(source_table_cols)
-            print(f"measurement id start: {self.measurement_id_start}")
+            # print(f"measurement id start: {self.measurement_id_start}")
             transformed_batch = self.transform(source_table_cols, source_batch)
             self.measurement_id_start += len(transformed_batch)
             del source_batch
@@ -160,7 +160,7 @@ class measurement():
         source_batch = self.fetch_in_batch_source_table(source_table_cols)
         source_df = pd.DataFrame(source_batch.fetchall())
         source_df.columns = source_table_cols["columns"].keys()
-        print(source_df.head(1))
+        # print(source_df.head(1))
         print(f"offset {self.offset} limit {self.limit} batch_count {len(source_df)} for {source_table_cols['table']} retrieved..")
         return source_df
 
@@ -307,7 +307,7 @@ class measurement():
             measurement_df = measurement_df.explode(['value_as_number', 'measurement_source_value', 'measurement_concept_id', 'measurement_event_id'])
             measurement_df = measurement_df.dropna(subset=['value_as_number'], thresh=1)
             measurement_df["measurement_id"] = range(self.measurement_id_start, (self.measurement_id_start + len(measurement_df)))
-            print(measurement_df.head(3))
+            # print(measurement_df.head(3))
 
         return measurement_df
 
@@ -362,7 +362,7 @@ class measurement():
             measurement_df["visit_occurrence_id"] = source_batch["visit_occurrence_id"]
             measurement_df["measurement_id"] = range(self.measurement_id_start, (self.measurement_id_start + len(measurement_df)))
 
-        print(measurement_df.head(1))
+        # print(measurement_df.head(1))
         del concept_df
         return measurement_df
 
@@ -391,7 +391,7 @@ class measurement():
             measurement_df["visit_occurrence_id"] = source_batch["visit_occurrence_id"]
             measurement_df["measurement_id"] = range(self.measurement_id_start, (self.measurement_id_start + len(measurement_df)))
 
-        print(measurement_df.head(1))
+        # print(measurement_df.head(1))
         del concept_df
         return measurement_df
 
@@ -420,7 +420,7 @@ class measurement():
             measurement_df["visit_occurrence_id"] = source_batch["visit_occurrence_id"]
             measurement_df["measurement_id"] = range(self.measurement_id_start, (self.measurement_id_start + len(measurement_df)))
 
-        print(measurement_df.head(1))
+        # print(measurement_df.head(1))
         del concept_df
         return measurement_df
 
@@ -448,7 +448,7 @@ class measurement():
             measurement_df = measurement_df.explode(['value_as_number', 'measurement_source_value', 'measurement_event_id'])
             measurement_df = measurement_df.dropna(subset=['value_as_number'], thresh=1)
             measurement_df["measurement_id"] = range(self.measurement_id_start, (self.measurement_id_start + len(measurement_df)))
-            print(measurement_df.head(len(measurement_df)))
+            # print(measurement_df.head(len(measurement_df)))
         return measurement_df
 
     def transform_preop_riskindex(self, source_table_cols, source_batch, measurement_df):
@@ -476,7 +476,7 @@ class measurement():
             measurement_df = measurement_df.explode(['value_source_value', 'measurement_source_value', 'measurement_event_id'])
             measurement_df = measurement_df.dropna(subset=['value_source_value'], thresh=1)
             measurement_df["measurement_id"] = range(self.measurement_id_start, (self.measurement_id_start + len(measurement_df)))
-            print(measurement_df.head(len(measurement_df)))
+            # print(measurement_df.head(len(measurement_df)))
         return measurement_df
 
     def transform_intraop_nurvitals(self, source_table_cols, source_batch, measurement_df):
@@ -503,7 +503,7 @@ class measurement():
             measurement_df["visit_occurrence_id"] = None # There's no session_id involved with source table
             measurement_df["measurement_id"] = range(self.measurement_id_start, (self.measurement_id_start + len(measurement_df)))
 
-        print(measurement_df.head(1))
+        # print(measurement_df.head(1))
         del concept_df
         return measurement_df
 
