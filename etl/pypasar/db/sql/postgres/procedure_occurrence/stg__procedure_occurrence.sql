@@ -32,7 +32,6 @@ CREATE OR REPLACE VIEW {OMOP_SCHEMA}.stg__procedure_occurrence AS
                 0 AS quantity,
                 provider.provider_id AS provider_id,
                 vo.visit_occurrence_id AS visit_occurrence_id,
-                0 AS visit_detail_id,
                 operation.procedure_code AS procedure_source_value,
                 CASE WHEN stcm.target_concept_id IS NULL THEN 0
                 ELSE stcm.target_concept_id
@@ -64,7 +63,6 @@ CREATE OR REPLACE VIEW {OMOP_SCHEMA}.stg__procedure_occurrence AS
             temp.quantity,
             temp.provider_id,
             temp.visit_occurrence_id,
-            temp.visit_detail_id,
             temp.procedure_source_value,
             temp.procedure_source_concept_id,
             temp.modifier_source_value
@@ -87,7 +85,6 @@ CREATE OR REPLACE VIEW {OMOP_SCHEMA}.stg__procedure_occurrence AS
                 0 AS quantity,
                 CAST(NULL as INTEGER) AS provider_id,
                 CAST(NULL as INTEGER) AS visit_occurrence_id,
-                0 AS visit_detail_id,
                 renal.crrt_type AS procedure_source_value,
                 CASE 
                     WHEN crrt_type = 'CVVHDF - Continuous Veno-Venous Hemodiafiltration' THEN 4049846
@@ -120,7 +117,6 @@ CREATE OR REPLACE VIEW {OMOP_SCHEMA}.stg__procedure_occurrence AS
                         0 AS quantity,
                         CAST(NULL as INTEGER) AS provider_id,
                         vo.visit_occurrence_id AS visit_occurrence_id,
-                        0 AS visit_detail_id,
                         procedure_name AS procedure_source_value,
                         CASE WHEN stcm.target_concept_id IS NULL THEN 0
                         ELSE stcm.target_concept_id
@@ -153,7 +149,6 @@ CREATE OR REPLACE VIEW {OMOP_SCHEMA}.stg__procedure_occurrence AS
                 post_op__renal.quantity,
                 post_op__renal.provider_id,
                 post_op__renal.visit_occurrence_id,
-                post_op__renal.visit_detail_id,
                 post_op__renal.procedure_source_value,
                 post_op__renal.procedure_source_concept_id,
                 post_op__renal.modifier_source_value
@@ -174,7 +169,6 @@ CREATE OR REPLACE VIEW {OMOP_SCHEMA}.stg__procedure_occurrence AS
                 pre_op__radiology.quantity,
                 pre_op__radiology.provider_id,
                 pre_op__radiology.visit_occurrence_id,
-                pre_op__radiology.visit_detail_id,
                 pre_op__radiology.procedure_source_value,
                 pre_op__radiology.procedure_source_concept_id,
                 pre_op__radiology.modifier_source_value 
