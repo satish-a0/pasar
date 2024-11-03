@@ -52,10 +52,10 @@ def etl(tables):
         # Ingestion will proceed in the order defined wherein dependencies will be populated first
         omop_entities_to_ingest = [
             #'cdm_source',  # Required for OHDSI R Packages like data quality to run
-            #'concept',
-            #'concept_ancestor',
-            #'concept_relationship',
-            #'source_to_concept_map',
+            'concept',
+            'concept_ancestor',
+            'concept_relationship',
+            'source_to_concept_map',
             'care_site',
             'provider',
             'person',
