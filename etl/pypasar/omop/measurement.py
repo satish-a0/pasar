@@ -371,7 +371,7 @@ class measurement():
         print(f"INSIDE transform_postop_lab..")
 
         # Load specific source codes mapping into df
-        concept_df = pd.read_sql_query(f"select source_code, target_concept_id from {self.temp_concept_table} where source_vocabulary_id='SG_PASAR_POSTOP_LABS_ALL'", con=self.engine)
+        concept_df = pd.read_sql_query(f"select source_code, target_concept_id from {self.temp_concept_table} where source_vocabulary_id='SG_PASAR_POSTOP_LAB'", con=self.engine)
 
         # Assumption picking only max values for simplicity and ignoring the min values
         if len(source_batch) > 0:
