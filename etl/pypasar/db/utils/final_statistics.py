@@ -44,7 +44,7 @@ class final_statistics:
                 # print(rows)
                 table_dict = {}
                 for row in rows:
-                    table_dict[row[0]] = {"table_count": row[1]}
+                    table_dict[row[0]] = {"records_count": row[1]}
                 # print(table_dict)
                 return table_dict
 

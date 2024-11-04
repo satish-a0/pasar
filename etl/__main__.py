@@ -16,6 +16,32 @@ logging.basicConfig(level=os.getenv("LOGLEVEL", "ERROR"))
 # Load environment variables from the .env file
 load_dotenv()
 
+# Ingestion will proceed in the order defined wherein dependencies will be populated first
+omop_entities_to_ingest = [
+    #'cdm_source',  # Required for OHDSI R Packages like data quality to run
+    # 'concept',
+    # 'concept_ancestor',
+    # 'concept_relationship',
+    'source_to_concept_map',
+    'care_site',
+    'provider',
+    'person',
+    'observation_period',
+    'death',
+    'visit_occurrence',
+    'visit_detail',
+    'condition_occurrence',
+    'condition_era',
+    'drug_exposure',
+    'drug_era',
+    'procedure_occurrence',
+    'device_exposure',
+    'observation',
+    'note',
+    'specimen',
+    'measurement'
+]
+
 def select_db_dialect(db_dialect):
     db = None
     match db_dialect:
@@ -42,39 +68,9 @@ def db(option):
 
 
 def etl(tables):
-
-    omop_entities_to_ingest = None
-
+    global omop_entities_to_ingest
     if tables is not None:
-        omop_entities_to_ingest = [table.strip()
-                                   for table in tables.split(',')]
-    else:
-        # Ingestion will proceed in the order defined wherein dependencies will be populated first
-        omop_entities_to_ingest = [
-            #'cdm_source',  # Required for OHDSI R Packages like data quality to run
-            'concept',
-            'concept_ancestor',
-            'concept_relationship',
-            'source_to_concept_map',
-            'care_site',
-            'provider',
-            'person',
-            'observation_period',
-            'death',
-            'visit_occurrence',
-            'visit_detail',
-            'condition_occurrence',
-            'condition_era',
-            'drug_exposure',
-            'drug_era',
-            'procedure_occurrence',
-            'device_exposure',
-            'observation',
-            'note',
-            'specimen',
-            'measurement'
-        ]
-
+        omop_entities_to_ingest = [table.strip() for table in tables.split(',')]
     print(f"OMOP tables to be executed: {omop_entities_to_ingest}")
 
     table_etl_ingestion_time_dict = {}
@@ -99,10 +95,13 @@ def etl(tables):
     except Exception as err:
         raise err
 
-def collect_statistics(omop_entities_to_ingest):
+def collect_statistics(omop_entities_to_ingest, printStatistics=False):
     print(f"Begin execution for final_statistics..")
     collect_statistics = final_statistics.final_statistics()
-    return collect_statistics.execute(omop_entities_to_ingest)
+    final_statistic_dict = collect_statistics.execute(omop_entities_to_ingest)
+    if printStatistics:
+        print(json.dumps(final_statistic_dict, indent=3))
+    return final_statistic_dict
 
 # Entrypoint
 try:
@@ -114,7 +113,9 @@ try:
         case "etl":
             tables = None if len(sys.argv) <= 2 else sys.argv[2]
             etl(tables)
+        case "stats":
+            collect_statistics(omop_entities_to_ingest, True)
         case _:
-            print("Entrypoint must be either db or etl")
+            print("Entrypoint must be either db / etl / stats")
 except Exception as err:
     traceback.print_exc()
