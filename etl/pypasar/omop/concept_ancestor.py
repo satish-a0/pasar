@@ -15,7 +15,7 @@ class concept_ancestor:
     def __init__(self):
         self.engine = postgres().get_engine()  # Get PG Connection
         self.omop_schema = os.getenv("POSTGRES_OMOP_SCHEMA")
-        self.source_file = os.path.join(os.getenv("BASE_PATH"), "transformed", "CONCEPT_ANCESTOR.csv")
+        self.source_file = os.path.join(os.getenv("BASE_PATH"), "vocab", "CONCEPT_ANCESTOR.csv")
 
     def execute(self):
         try:

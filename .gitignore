@@ -3,6 +3,7 @@
 env*
 tmp
 private
+etl/pypasar/db/sql/postgres/vocab
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
