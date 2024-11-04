@@ -335,6 +335,7 @@ class measurement():
             measurement_df["visit_occurrence_id"] = source_batch["visit_occurrence_id"]
             measurement_df["measurement_id"] = range(self.measurement_id_start, (self.measurement_id_start + len(measurement_df)))
 
+        del concept_df
         # print(measurement_df.head(1))
         return measurement_df
 
