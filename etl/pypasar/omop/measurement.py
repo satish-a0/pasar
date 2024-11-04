@@ -282,7 +282,7 @@ class measurement():
         
         measurement_score_columns = ["height","weight","bmi", "systolic_bp", "diastolic_bp", "heart_rate", "o2_saturation", "temperature", "pain_score"]
         # 1:1 mapping index between measurement_score_columns and measurement_char_concept_ids
-        measurement_char_concept_ids = [3036277, 3025315, 3038553, 3004249, 3012888, 3027018, 3013502, 3020891, 43055141]
+        measurement_char_concept_ids = [607590, 4099154, 4245997, 4152194, 4154790, 3027018, 4020553, 4302666, 4022240]
         
         if len(source_batch) > 0:
             measurement_df["person_id"] = source_batch["person_id"]
