@@ -50,6 +50,7 @@ def etl(tables):
         omop_entities_to_ingest = [
             'cdm_source',  # Required for OHDSI R Packages like data quality to run
             'concept',
+            'source_to_concept_map',
             'location',
             'provider',
             'care_site',
