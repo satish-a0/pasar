@@ -124,6 +124,8 @@ class measurement():
                 self.limit, self.offset = int(os.getenv("PROCESSING_BATCH_SIZE")), 0
                 self.process_by_source_table(source_table_cols)
                 print(f"{source_table_cols['table']} processing completed..")
+        # Update the 
+        self.update_unit_concept_id()
 
     def process_by_source_table(self, source_table_cols):
         print(f"Processing {source_table_cols['table']}..")
@@ -456,7 +458,7 @@ class measurement():
         print(f"INSIDE transform_preop_riskindex..")
         # 1 to Many
         # Assumption adding cardiac_risk_index as part of value_source_value instead of value_as_number for simplicity
-        measurement_score_columns = ["asa_class","cri_functional_status","cardiac_risk_index","cardiac_risk_class",         "osa_risk_index","act_risk"]
+        measurement_score_columns = ["asa_class","cri_functional_status","cardiac_risk_index","cardiac_risk_class","osa_risk_index","act_risk"]
         if len(source_batch) > 0:
             measurement_df["person_id"] = source_batch["person_id"]
             measurement_df["measurement_date"] = pd.to_datetime(source_batch["session_startdate"]).dt.date
@@ -511,6 +513,29 @@ class measurement():
     def ingest(self, transformed_batch):
         transformed_batch.to_sql(name="measurement", schema=self.omop_schema, con=self.engine, if_exists="append", index=False)
         print(f"offset {self.offset} limit {self.limit} batch_count {len(transformed_batch)} ingested..")
+
+
+    def update_unit_concept_id(self):
+        update_unit_concept_sql = f"""With unit_concept_mapping AS (
+                                        SELECT column1 as "measurement_concept_id",
+                                            column2 as "unit_concept_id"
+                                        FROM (
+                                                values (4216098, 8784),
+                                                    (4245152, 8753),
+                                                    (3024171, 8483),
+                                                    (4148615, 8848),
+                                                    (4154790, 8876),
+                                                    (4097430, 9557),
+                                                    (4152194, 8876),
+                                                    (4298431, 8848),
+                                                    (4254663, 8848),
+                                                    (4184637, 8554)
+                                            ) s
+                                    )
+                        UPDATE {self.omop_schema}.measurement
+                        SET unit_concept_id = unit_concept_mapping.unit_concept_id
+                        FROM unit_concept_mapping
+                        WHERE {self.omop_schema}.measurement.measurement_concept_id = unit_concept_mapping.measurement_concept_id""";
 
     def finalize(self):
         # cleanup
