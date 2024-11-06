@@ -43,8 +43,11 @@ class final_statistics:
                 rows = res.fetchall()
                 # print(rows)
                 table_dict = {}
+                total_rows = 0
                 for row in rows:
+                    total_rows += int(row[1])
                     table_dict[row[0]] = {"records_count": row[1]}
+                table_dict["total"] = {"records_count": total_rows}
                 # print(table_dict)
                 return table_dict
 

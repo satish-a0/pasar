@@ -18,11 +18,11 @@ load_dotenv()
 
 # Ingestion will proceed in the order defined wherein dependencies will be populated first
 omop_entities_to_ingest = [
-    #'cdm_source',  # Required for OHDSI R Packages like data quality to run
     # 'concept',
     # 'concept_ancestor',
     # 'concept_relationship',
     'source_to_concept_map',
+    'cdm_source',  # Required for OHDSI R Packages like data quality to run
     'care_site',
     'provider',
     'person',
@@ -77,6 +77,7 @@ def etl(tables):
 
     # Start ETL for OMOP Tables
     try:
+        total_time_taken = 0.0
         for omop_entity in omop_entities_to_ingest:
             print(f"Import {omop_entity}..")
             omop_module = import_module(f'pypasar.omop.{omop_entity}')
@@ -85,10 +86,12 @@ def etl(tables):
             start_time = time.monotonic()
             omop_class.execute()
             td = timedelta(seconds=time.monotonic() - start_time)
+            total_time_taken += td.total_seconds()
             table_etl_ingestion_time_dict[omop_entity] = {"time_taken": f"{td.total_seconds()}s"}
             print(f"Completed execution for {omop_entity}: {td.total_seconds()}s")
             print()
 
+        table_etl_ingestion_time_dict["total"] = {"time_taken": f"{total_time_taken}s"}
         table_count_dict = collect_statistics(omop_entities_to_ingest)
         final_statistic_dict =  {k: v | table_count_dict[k] for k, v in table_etl_ingestion_time_dict.items()}
         print(json.dumps(final_statistic_dict, indent=3))
