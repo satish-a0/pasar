@@ -99,6 +99,11 @@ If you have an existing R Setup and familiar with OHDSI Packages then setup the 
 1. Copy the `CONCEPT.csv`, `CONCEPT_RELATIONSHIP.csv`, `CONCEPT_ANCESTOR.csv` from the GCP Bucket `ohdsi_omop_2024/vocab_2024Nov03_v5` to the folder `etl/pypasar/db/sql/postgres/vocab`
 2. Run `python . etl concept,concept_relationship,concept_ancestor`. Note: <i>You might run into foreign key constraints for the concept tables during truncation. Drop them, Truncate and Readd them again.</i>
 
+### Run statistics on a OMOP Schema
+
+This can be run on an existing / ETL completed OMOP schema
+- Run `python . stats`
+
 ### Cleanup
 
 #### Remove Python environment
