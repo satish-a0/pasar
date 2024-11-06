@@ -203,8 +203,8 @@ class ObservationMappingConfig:
     observation_concept_id_specific_config = {
         "preop.riskindex": {
             "high_risk_op": {"use_hardcoded_value": 0},
-            "h_o_ihd": {"use_hardcoded_value": 4077352},
-            "h_o_chf": {"use_hardcoded_value": 4059317},
+            "h_o_ihd": {"use_hardcoded_value": 321588},
+            "h_o_chf": {"use_hardcoded_value": 316139},
             "h_o_cva": {"use_hardcoded_value": 21491926},
             "dm_on_insulin": {"use_hardcoded_value": 1340204},
             "hypertension": {"use_hardcoded_value": 316866},
