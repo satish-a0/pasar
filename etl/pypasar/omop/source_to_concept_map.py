@@ -13,7 +13,7 @@ class source_to_concept_map:
     def __init__(self):
         self.engine = postgres().get_engine()  # Get PG Connection
         self.omop_schema = os.getenv("POSTGRES_OMOP_SCHEMA")
-        self.source_file = os.path.join(os.getenv("BASE_PATH"), "source_to_concep_map", "v3b.csv")
+        self.source_file = os.path.join(os.getenv("BASE_PATH"), "source_to_concep_map", "v3c.csv")
         self.temp_table = f'temp_source_to_concept_map_{os.urandom(15).hex()}'
 
     def execute(self):
