@@ -17,13 +17,14 @@ logging.basicConfig(level=os.getenv("LOGLEVEL", "ERROR"))
 load_dotenv()
 
 # Ingestion will proceed in the order defined wherein dependencies will be populated first
+# CAUTION!! Advisable to not change the order below, unless necessary!!!
 omop_entities_to_ingest = [
-    # 'concept',
-    # 'concept_ancestor',
-    # 'concept_relationship',
+    'concept',
+    'concept_ancestor',
+    'concept_relationship',
     'source_to_concept_map',
     'cdm_source',  # Required for OHDSI R Packages like data quality to run
-    'care_site',
+    'care_site', # Truncate CASCADE enabled!! ETL for this table will TRUNCATE REST OF THE TABLES BELOW!!
     'provider',
     'person',
     'observation_period',
