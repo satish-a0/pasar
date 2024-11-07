@@ -537,7 +537,12 @@ class measurement():
                         UPDATE {self.omop_schema}.measurement
                         SET unit_concept_id = unit_concept_mapping.unit_concept_id
                         FROM unit_concept_mapping
-                        WHERE {self.omop_schema}.measurement.measurement_concept_id = unit_concept_mapping.measurement_concept_id""";
+                        WHERE {self.omop_schema}.measurement.measurement_concept_id = unit_concept_mapping.measurement_concept_id"""
+        
+        with self.engine.connect() as connection:
+            with connection.begin():
+                connection.execute(text(update_unit_concept_sql))
+                print("Unit Concept IDs updated for measurement..")
 
     def finalize(self):
         # cleanup

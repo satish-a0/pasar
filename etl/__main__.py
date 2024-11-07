@@ -100,7 +100,7 @@ def etl(tables):
         raise err
 
 def collect_statistics(omop_entities_to_ingest, printStatistics=False):
-    print(f"Begin execution for final_statistics..")
+    print(f"Begin collecting final_statistics..")
     collect_statistics = final_statistics.final_statistics()
     final_statistic_dict = collect_statistics.execute(omop_entities_to_ingest)
     if printStatistics:
