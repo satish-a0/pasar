@@ -95,9 +95,10 @@ If you have an existing R Setup and familiar with OHDSI Packages then setup the 
 	- Example `python . etl cdm_source`
 	- Multiple tables for cdm_source and concept `python . etl cdm_source,concept`. <b>NO SPACES BETWEEN COMMA SEPARTED OMOP Tables</b>
 
-### Load Athena Vocab
+### Load Athena Vocabularies
 1. Copy the `CONCEPT.csv`, `CONCEPT_RELATIONSHIP.csv`, `CONCEPT_ANCESTOR.csv` from the GCP Bucket `ohdsi_omop_2024/vocab_2024Nov03_v5` to the folder `etl/pypasar/db/sql/postgres/vocab`
-2. Run `python . etl concept,concept_relationship,concept_ancestor`. Note: <i>You might run into foreign key constraints for the concept tables during truncation. Drop them, Truncate and Readd them again.</i>
+2. Run `python . etl concept,concept_relationship,concept_ancestor`. 
+3. Due to foreign key constraints issue for not loading CPT4 code for example, constraints are disabled for concepts related tables and procedure_occurrence table via this file `pasar/etl/pypasar/db/sql/postgres/drop_constraints.sql`. If all the vocabularies are loaded/fixed, then the statements in this file `drop_constraints.sql` can be removed/commented and a new schema can be recreated with the constraints already enabled in `pasar/etl/pypasar/db/sql/postgres/constraints.sql`
 
 #### Newer Vocabulary version / Load CPT4 codes
 - Please note, `CONCEPT.csv` is already transformed in a certain format while `CONCEPT_{RELATIONSHIP,ANCESTOR}.csv` files are untouched.
