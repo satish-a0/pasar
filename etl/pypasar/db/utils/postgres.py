@@ -18,6 +18,7 @@ class postgres:
         self.files = ["ddl.sql",
                       "primary_keys.sql",
                       "constraints.sql",
+                      "drop_constraints.sql", # Certain SQL statements can be commented based on the additional vocabularies like CPT4 are added
                       # "indices.sql"
                       ]
 

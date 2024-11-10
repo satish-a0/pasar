@@ -1,0 +1,12 @@
+ALTER TABLE concept drop CONSTRAINT fpk_concept_domain_id;
+ALTER TABLE concept drop CONSTRAINT fpk_concept_vocabulary_id;
+ALTER TABLE concept drop CONSTRAINT fpk_concept_concept_class_id;
+ALTER TABLE concept_relationship drop CONSTRAINT fpk_concept_relationship_relationship_id;
+ALTER TABLE concept_ancestor drop CONSTRAINT fpk_concept_ancestor_ancestor_concept_id;
+ALTER TABLE concept_ancestor drop CONSTRAINT fpk_concept_ancestor_descendant_concept_id;
+ALTER TABLE concept_relationship drop CONSTRAINT fpk_concept_relationship_concept_id_1;
+ALTER TABLE concept_relationship drop CONSTRAINT fpk_concept_relationship_concept_id_2;
+ALTER TABLE source_to_concept_map drop CONSTRAINT fpk_source_to_concept_map_target_vocabulary_id;
+ALTER TABLE source_to_concept_map drop CONSTRAINT fpk_source_to_concept_map_target_concept_id;
+ALTER TABLE procedure_occurrence drop CONSTRAINT fpk_procedure_occurrence_procedure_concept_id; --CPT4 Codes ex: 2105064
+ALTER TABLE procedure_occurrence drop CONSTRAINT fpk_procedure_occurrence_procedure_source_concept_id;
