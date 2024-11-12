@@ -29,10 +29,13 @@ class device_exposure:
                     text(f'SET search_path TO {os.getenv("POSTGRES_OMOP_SCHEMA")}'))
 
                 # Drop stg__device_exposure view if exists
-                connection.execute(text("DROP VIEW IF EXISTS stg__device_exposure"))
+                connection.execute(text("DROP VIEW IF EXISTS stg__device_exposure CASCADE"))
+
+                # Drop int__device_exposure view if exists
+                connection.execute(text("DROP VIEW IF EXISTS int__device_exposure CASCADE"))
 
                 # Delete device_exposure table
-                connection.execute(text("TRUNCATE TABLE device_exposure"))
+                connection.execute(text("DELETE FROM device_exposure"))
 
     def process(self):
         # In batches

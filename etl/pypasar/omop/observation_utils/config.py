@@ -20,7 +20,7 @@ class ObservationMappingConfig:
     }
 
     visit_occurrence_id_mapping = {
-        "pasar": "session_id", "omop": "visit_occurrence_id"}
+        "pasar": "session_id", "omop": "visit_occurrence_id", "joinpasaromop": "omop_visit_occurrence_id"}
 
     value_as_concept_id_mapping = {
         "pasar": "allergy_information",
@@ -203,18 +203,18 @@ class ObservationMappingConfig:
     observation_concept_id_specific_config = {
         "preop.riskindex": {
             "high_risk_op": {"use_hardcoded_value": 0},
-            "h_o_ihd": {"use_hardcoded_value": 0},
-            "h_o_chf": {"use_hardcoded_value": 0},
-            "h_o_cva": {"use_hardcoded_value": 0},
-            "dm_on_insulin": {"use_hardcoded_value": 0},
-            "hypertension": {"use_hardcoded_value": 4220915},
-            "history_of_osa": {"use_hardcoded_value": 0},
-            "loud_snoring": {"use_hardcoded_value": 35810206},
-            "daytime_tiredness": {"use_hardcoded_value": 0},
+            "h_o_ihd": {"use_hardcoded_value": 321588},
+            "h_o_chf": {"use_hardcoded_value": 316139},
+            "h_o_cva": {"use_hardcoded_value": 21491926},
+            "dm_on_insulin": {"use_hardcoded_value": 1340204},
+            "hypertension": {"use_hardcoded_value": 316866},
+            "history_of_osa": {"use_hardcoded_value": 442588},
+            "loud_snoring": {"use_hardcoded_value": 1340204},
+            "daytime_tiredness": {"use_hardcoded_value": 1340204},
             "apnoea": {"use_hardcoded_value": 313459},
-            "cpap_use": {"use_hardcoded_value": 0},
-            "history_of_hypertension": {"use_hardcoded_value": 0}, # Source concept ID - 3374101
-            "history_of_motion_sickness": {"use_hardcoded_value": 0},
+            "cpap_use": {"use_hardcoded_value": 1340204},
+            "history_of_hypertension": {"use_hardcoded_value": 1340204},
+            "history_of_motion_sickness": {"use_hardcoded_value": 30284},
             "postop_nausea_smoking_history": {"use_hardcoded_value": 0},
         },
         "preop.others": {

@@ -30,7 +30,7 @@ class observation_period:
                 # Drop the view if it exists
                 connection.execute(text("DROP VIEW IF EXISTS stg__observation_period"))
                 # Clear all existing rows from the observation_period table
-                connection.execute(text("TRUNCATE TABLE observation_period"))
+                connection.execute(text("DELETE FROM observation_period"))
 
     def process(self):
         # List of SQL file paths

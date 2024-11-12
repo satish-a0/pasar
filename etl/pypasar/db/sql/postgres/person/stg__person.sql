@@ -52,7 +52,7 @@ CREATE OR REPLACE VIEW {OMOP_SCHEMA}.stg__person AS
         FROM filteredSource AS fs
         JOIN {OMOP_SCHEMA}.source_to_concept_map AS stcm
             ON fs.race_source_value = stcm.source_code
-        WHERE stcm.source_vocabulary_id = 'SG_PASAR_RACE'
+        WHERE stcm.source_vocabulary_id = 'SG_PASAR_PREOP_CHAR_RACE'
     ), 
     -- Calculate the year of birth
     computing AS (

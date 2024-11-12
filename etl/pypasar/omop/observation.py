@@ -40,7 +40,7 @@ class observation:
                 connection.execute(
                     text(f'SET search_path TO {os.getenv("POSTGRES_OMOP_SCHEMA")}'))
                 # Truncate observation table
-                connection.execute(text("Truncate table observation"))
+                connection.execute(text("DELETE FROM observation"))
         logger.info("Truncating Done")
 
     def process(self):
@@ -54,7 +54,12 @@ class observation:
         with self.engine.connect() as connection:
             for source_table in SOURCE_TABLES:
                 for chunk in pd.read_sql(
-                    f"SELECT * from {source_table};",
+                    f"""SELECT s.*, v.visit_occurrence_id as omop_visit_occurrence_id 
+                        FROM (SELECT * FROM {source_table} order by anon_case_no, session_id) s 
+                            INNER JOIN {os.getenv("POSTGRES_OMOP_SCHEMA")}.VISIT_OCCURRENCE v
+                                ON SUBSTRING(v.visit_occurrence_id::text,
+                                             1,
+                                             LENGTH(v.visit_occurrence_id::text) - 2) = s.session_id::text;""",
                     con=connection,
                     chunksize=CHUNK_SIZE
                 ):

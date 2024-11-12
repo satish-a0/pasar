@@ -28,7 +28,7 @@ class drug_era:
                 connection.execute(
                     text(f'SET search_path TO {os.getenv("POSTGRES_OMOP_SCHEMA")}'))
                 # Clear all existing rows from the person table
-                connection.execute(text("TRUNCATE TABLE drug_era"))
+                connection.execute(text("DELETE FROM drug_era"))
 
     def process(self):
         # List of SQL file paths

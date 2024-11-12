@@ -6,7 +6,7 @@
 | --- | --- | --- | --- | --- |
 | 1 | visit_occurrence_id | session_id <br> session_startdate | Use `session_id` as `visit_occurrence_id` since it is already an INTEGER. <br><br> ℹ️ Add a number suffix to ensure it is unique | **Neither field is unique, so some rows might be missing during processing. |
 | 2 | person_id | anon_case_no | Join with person.person_source_value for the `person_id` | |
-| 3 | visit_concept_id | admission_type | Inpatient -> 9201 <br> Same Day Admission (SDA) -> 9201 <br> Short Stay Ward (SSW) -> 9201 <br> Day Surgery (DS) -> 9202 | [Accepted Concepts](https://athena.ohdsi.org/search-terms/terms?domain=Visit&standardConcept=Standard&page=1&pageSize=15&query=) |
+| 3 | visit_concept_id | admission_type | Inpatient -> 9201 <br> Same Day Admission (SDA) -> 9202 <br> Short Stay Ward (SSW) -> 9202 <br> Day Surgery (DS) -> 9202 | [Accepted Concepts](https://athena.ohdsi.org/search-terms/terms?domain=Visit&standardConcept=Standard&page=1&pageSize=15&query=) |
 | 4 | visit_start_date | session_startdate | | |
 | 5 | visit_start_datetime | <i style="color:gray;">NULL</i> | <i style="color:gray;">NULL</i> | |
 | 6 | visit_end_date | session_enddate | | |

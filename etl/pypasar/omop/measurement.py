@@ -92,7 +92,7 @@ class measurement():
         #Truncate
         with self.engine.connect() as connection:
             with connection.begin():
-                connection.execute(text(f"Truncate table {self.omop_schema}.measurement"))
+                connection.execute(text(f"DELETE FROM {self.omop_schema}.measurement"))
         # Create temporary concept table
         self.create_temp_concept_table()
 
@@ -124,6 +124,8 @@ class measurement():
                 self.limit, self.offset = int(os.getenv("PROCESSING_BATCH_SIZE")), 0
                 self.process_by_source_table(source_table_cols)
                 print(f"{source_table_cols['table']} processing completed..")
+        # Update the 
+        self.update_unit_concept_id()
 
     def process_by_source_table(self, source_table_cols):
         print(f"Processing {source_table_cols['table']}..")
@@ -131,7 +133,7 @@ class measurement():
         print(f"Total count {total_count_source_table}")
         while self.offset <= total_count_source_table: # Fetch and process in batches
             source_batch = self.retrieve(source_table_cols)
-            print(f"measurement id start: {self.measurement_id_start}")
+            # print(f"measurement id start: {self.measurement_id_start}")
             transformed_batch = self.transform(source_table_cols, source_batch)
             self.measurement_id_start += len(transformed_batch)
             del source_batch
@@ -160,7 +162,7 @@ class measurement():
         source_batch = self.fetch_in_batch_source_table(source_table_cols)
         source_df = pd.DataFrame(source_batch.fetchall())
         source_df.columns = source_table_cols["columns"].keys()
-        print(source_df.head(1))
+        # print(source_df.head(1))
         print(f"offset {self.offset} limit {self.limit} batch_count {len(source_df)} for {source_table_cols['table']} retrieved..")
         return source_df
 
@@ -282,7 +284,7 @@ class measurement():
         
         measurement_score_columns = ["height","weight","bmi", "systolic_bp", "diastolic_bp", "heart_rate", "o2_saturation", "temperature", "pain_score"]
         # 1:1 mapping index between measurement_score_columns and measurement_char_concept_ids
-        measurement_char_concept_ids = [3036277, 3025315, 3038553, 3004249, 3012888, 3027018, 3013502, 3020891, 43055141]
+        measurement_char_concept_ids = [607590, 4099154, 4245997, 4152194, 4154790, 3027018, 4020553, 4302666, 4022240]
         
         if len(source_batch) > 0:
             measurement_df["person_id"] = source_batch["person_id"]
@@ -307,7 +309,7 @@ class measurement():
             measurement_df = measurement_df.explode(['value_as_number', 'measurement_source_value', 'measurement_concept_id', 'measurement_event_id'])
             measurement_df = measurement_df.dropna(subset=['value_as_number'], thresh=1)
             measurement_df["measurement_id"] = range(self.measurement_id_start, (self.measurement_id_start + len(measurement_df)))
-            print(measurement_df.head(3))
+            # print(measurement_df.head(3))
 
         return measurement_df
 
@@ -335,6 +337,7 @@ class measurement():
             measurement_df["visit_occurrence_id"] = source_batch["visit_occurrence_id"]
             measurement_df["measurement_id"] = range(self.measurement_id_start, (self.measurement_id_start + len(measurement_df)))
 
+        del concept_df
         # print(measurement_df.head(1))
         return measurement_df
 
@@ -362,7 +365,7 @@ class measurement():
             measurement_df["visit_occurrence_id"] = source_batch["visit_occurrence_id"]
             measurement_df["measurement_id"] = range(self.measurement_id_start, (self.measurement_id_start + len(measurement_df)))
 
-        print(measurement_df.head(1))
+        # print(measurement_df.head(1))
         del concept_df
         return measurement_df
 
@@ -370,7 +373,7 @@ class measurement():
         print(f"INSIDE transform_postop_lab..")
 
         # Load specific source codes mapping into df
-        concept_df = pd.read_sql_query(f"select source_code, target_concept_id from {self.temp_concept_table} where source_vocabulary_id='SG_PASAR_POSTOP_LABS_ALL'", con=self.engine)
+        concept_df = pd.read_sql_query(f"select source_code, target_concept_id from {self.temp_concept_table} where source_vocabulary_id='SG_PASAR_POSTOP_LAB'", con=self.engine)
 
         # Assumption picking only max values for simplicity and ignoring the min values
         if len(source_batch) > 0:
@@ -391,7 +394,7 @@ class measurement():
             measurement_df["visit_occurrence_id"] = source_batch["visit_occurrence_id"]
             measurement_df["measurement_id"] = range(self.measurement_id_start, (self.measurement_id_start + len(measurement_df)))
 
-        print(measurement_df.head(1))
+        # print(measurement_df.head(1))
         del concept_df
         return measurement_df
 
@@ -420,7 +423,7 @@ class measurement():
             measurement_df["visit_occurrence_id"] = source_batch["visit_occurrence_id"]
             measurement_df["measurement_id"] = range(self.measurement_id_start, (self.measurement_id_start + len(measurement_df)))
 
-        print(measurement_df.head(1))
+        # print(measurement_df.head(1))
         del concept_df
         return measurement_df
 
@@ -448,14 +451,14 @@ class measurement():
             measurement_df = measurement_df.explode(['value_as_number', 'measurement_source_value', 'measurement_event_id'])
             measurement_df = measurement_df.dropna(subset=['value_as_number'], thresh=1)
             measurement_df["measurement_id"] = range(self.measurement_id_start, (self.measurement_id_start + len(measurement_df)))
-            print(measurement_df.head(len(measurement_df)))
+            # print(measurement_df.head(len(measurement_df)))
         return measurement_df
 
     def transform_preop_riskindex(self, source_table_cols, source_batch, measurement_df):
         print(f"INSIDE transform_preop_riskindex..")
         # 1 to Many
         # Assumption adding cardiac_risk_index as part of value_source_value instead of value_as_number for simplicity
-        measurement_score_columns = ["asa_class","cri_functional_status","cardiac_risk_index","cardiac_risk_class",         "osa_risk_index","act_risk"]
+        measurement_score_columns = ["asa_class","cri_functional_status","cardiac_risk_index","cardiac_risk_class","osa_risk_index","act_risk"]
         if len(source_batch) > 0:
             measurement_df["person_id"] = source_batch["person_id"]
             measurement_df["measurement_date"] = pd.to_datetime(source_batch["session_startdate"]).dt.date
@@ -476,7 +479,7 @@ class measurement():
             measurement_df = measurement_df.explode(['value_source_value', 'measurement_source_value', 'measurement_event_id'])
             measurement_df = measurement_df.dropna(subset=['value_source_value'], thresh=1)
             measurement_df["measurement_id"] = range(self.measurement_id_start, (self.measurement_id_start + len(measurement_df)))
-            print(measurement_df.head(len(measurement_df)))
+            # print(measurement_df.head(len(measurement_df)))
         return measurement_df
 
     def transform_intraop_nurvitals(self, source_table_cols, source_batch, measurement_df):
@@ -503,13 +506,43 @@ class measurement():
             measurement_df["visit_occurrence_id"] = None # There's no session_id involved with source table
             measurement_df["measurement_id"] = range(self.measurement_id_start, (self.measurement_id_start + len(measurement_df)))
 
-        print(measurement_df.head(1))
+        # print(measurement_df.head(1))
         del concept_df
         return measurement_df
 
     def ingest(self, transformed_batch):
         transformed_batch.to_sql(name="measurement", schema=self.omop_schema, con=self.engine, if_exists="append", index=False)
         print(f"offset {self.offset} limit {self.limit} batch_count {len(transformed_batch)} ingested..")
+
+
+    def update_unit_concept_id(self):
+        update_unit_concept_sql = f"""With unit_concept_mapping AS (
+                                        SELECT column1 as "measurement_concept_id",
+                                            column2 as "unit_concept_id"
+                                        FROM (
+                                                values (4216098, 8784),
+                                                    (4245152, 8753),
+                                                    (3024171, 8483),
+                                                    (4148615, 8848),
+                                                    (4154790, 8876),
+                                                    (4097430, 9557),
+                                                    (4152194, 8876),
+                                                    (4298431, 8848),
+                                                    (4254663, 8848),
+                                                    (4184637, 8554),
+                                                    (3012888, 8876),
+                                                    (3004249, 8876)
+                                            ) s
+                                    )
+                        UPDATE {self.omop_schema}.measurement
+                        SET unit_concept_id = unit_concept_mapping.unit_concept_id
+                        FROM unit_concept_mapping
+                        WHERE {self.omop_schema}.measurement.measurement_concept_id = unit_concept_mapping.measurement_concept_id"""
+        
+        with self.engine.connect() as connection:
+            with connection.begin():
+                connection.execute(text(update_unit_concept_sql))
+                print("Unit Concept IDs updated for measurement..")
 
     def finalize(self):
         # cleanup

@@ -17,8 +17,8 @@ CREATE OR REPLACE VIEW {OMOP_SCHEMA}.int__visit_occurrence AS
             visit_occurrence_id,
             CASE visit_source_value
                 WHEN 'Inpatient' THEN 9201
-                WHEN 'Same Day Admission (SDA)' THEN 9201
-                WHEN 'Short Stay Ward (SSW)' THEN 9201
+                WHEN 'Same Day Admission (SDA)' THEN 9202
+                WHEN 'Short Stay Ward (SSW)' THEN 9202
                 WHEN 'Day Surgery (DS)' THEN 9202
                 ELSE 0
             END AS visit_concept_id

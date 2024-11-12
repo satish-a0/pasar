@@ -42,7 +42,7 @@ CREATE OR REPLACE VIEW {OMOP_SCHEMA}.stg__observation_period AS
         (
             SELECT 
                 anon_case_no AS person_id,
-                MIN(LEAST(operation_startDate, reported_date))AS start_date,
+                MIN(LEAST(operation_startDate, min_operation_date))AS start_date,
                 MAX(operation_enddate) AS end_date,
                 32879 AS period_type_concept_id
             FROM {POSTOP_SCHEMA}.labmicro

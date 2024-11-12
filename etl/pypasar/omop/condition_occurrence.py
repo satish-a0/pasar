@@ -117,8 +117,8 @@ class condition_occurrence:
         source_postop_discharge_df.columns = {'anon_case_no': str, 'id': int, 
                                               'session_enddate': 'datetime64[ns]', 'diagnosis_code': str, 
                                               'diagnosis_description': str, 'session_id': int}.keys()
-        print(source_postop_discharge_df.head(1))
-        print(f"offset {self.offset} limit {self.limit} batch_count {len(source_postop_discharge_df)} retrieved..")
+        # print(source_postop_discharge_df.head(1))
+        #print(f"offset {self.offset} limit {self.limit} batch_count {len(source_postop_discharge_df)} retrieved..")
         return source_postop_discharge_df
     
     def transform(self, source_batch):
@@ -134,7 +134,7 @@ class condition_occurrence:
         }
         # Initialize dataframe and display columns info
         condition_occ_df = pd.DataFrame(columns=condition_occurrence_schema.keys()).astype(condition_occurrence_schema)
-        print(f"source {len(source_batch)}")
+        # print(f"source {len(source_batch)}")
         
         if len(source_batch) > 0:
             condition_occ_df['condition_start_date'] = pd.to_datetime(source_batch['session_enddate'])
@@ -146,8 +146,8 @@ class condition_occurrence:
             condition_occ_df['condition_source_value'] = source_batch['diagnosis_code']
             condition_occ_df['condition_source_description'] = source_batch['diagnosis_description']
             condition_occ_df['condition_occurrence_id'] = range(self.offset + 1, (self.offset + 1 + len(source_batch)))
-            print(f'condition_occ_df {len(condition_occ_df)}')
-            print(condition_occ_df.head(3))
+            # print(f'condition_occ_df {len(condition_occ_df)}')
+            # print(condition_occ_df.head(3))
         
         # print(f"target {len(condition_occ_df)}")
         return condition_occ_df
@@ -200,7 +200,7 @@ class condition_occurrence:
                                                 ) v ON v.truncated_visit_occurrence_id = t.session_id
                                                 AND v.rownum = 1 
                                                 INNER JOIN { self.temp_concept_table } c ON t.condition_source_value = c.condition_source_value'''))
-        print(f"offset {self.offset} limit {self.limit} batch_count {len(transformed_batch)} ingested..")
+        #print(f"offset {self.offset} limit {self.limit} batch_count {len(transformed_batch)} ingested..")
 
     def fetch_total_count_source_postop_discharge(self):
         with self.engine.connect() as connection:
@@ -219,7 +219,7 @@ class condition_occurrence:
     def truncate_table(self, table_name_w_schema_prefix):
         with self.engine.connect() as connection:
             with connection.begin():
-                connection.execute(text(f"Truncate table {table_name_w_schema_prefix}"))
+                connection.execute(text(f"DELETE FROM {table_name_w_schema_prefix}"))
 
     def drop_table(self, table_name_w_schema_prefix):
         with self.engine.connect() as connection:

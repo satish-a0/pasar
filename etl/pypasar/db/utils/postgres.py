@@ -17,7 +17,8 @@ class postgres:
         self.base_path = "pypasar/db/sql/postgres" if base_path is None else base_path
         self.files = ["ddl.sql",
                       "primary_keys.sql",
-                      # "constraints.sql",
+                      "constraints.sql",
+                      "drop_constraints.sql", # Certain SQL statements can be commented based on the additional vocabularies like CPT4 are added
                       # "indices.sql"
                       ]
 
